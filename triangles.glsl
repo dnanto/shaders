@@ -21,17 +21,15 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     vec2 w1 = V2 - V1;
     vec2 w2 = V3 - V1;
     float d = determinant(mat2(w1, w2));
+    // check for d ≈ 0.0 ?
+    float s = determinant(mat2(P - V1, w2)) / d;
+    float t = determinant(mat2(w1, P - V2)) / d;
 
-    vec3 col = vec3(0.0);
-    if (d != 0.0) {
-        float s = determinant(mat2(P - V1, w2)) / d;
-        float t = determinant(mat2(w1, P - V2)) / d;
-        col = (
-            (s >= 0.0 && t >= 0.0 && (s + t) <= 1.0) ?
-                0.5 + 0.5 * cos(iTime + P.xyx + vec3(0, 2, 4)) :
-                col
-        );
-    }
+    vec3 col = (
+        (s >= 0.0 && t >= 0.0 && (s + t) <= 1.0) ?
+            0.5 + 0.5 * cos(iTime + P.xyx + vec3(0, 2, 4)) :
+            vec3(0.0)
+    );
 
     fragColor = vec4(col, 1.0);
 }
