@@ -29,7 +29,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         col = (
             (s >= 0.0 && t >=0.0 && (s + t) <= 1.0) ?
                 0.5 + 0.5 * cos(iTime + P.xyx + vec3(0, 2, 4)) :
-                vec3(0.0)
+                col
         );
     }
 
