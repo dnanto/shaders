@@ -27,7 +27,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         float s = determinant(mat2(P - V1, w2)) / d;
         float t = determinant(mat2(w1, P - V2)) / d;
         col = (
-            (s >= 0.0 && t >=0.0 && (s + t) <= 1.0) ?
+            (s >= 0.0 && t >= 0.0 && (s + t) <= 1.0) ?
                 0.5 + 0.5 * cos(iTime + P.xyx + vec3(0, 2, 4)) :
                 col
         );
