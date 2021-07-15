@@ -1,40 +1,55 @@
-// https://graphtoy.com/?
-//   f1(x,t)=0.05&v1=false&
-//   f2(x,t)=f1()%20*%20cos(radians(30.0))&v2=false&
-//   f3(x,t)=0.5%20*%20f1()%20/%20f2()&v3=false&
-//   f4(x,t)=x%20*%20f3()%20+%20floor(x%20/%20f2())%20*%20f1()&v4=true&
-//   f5(x,t)=&v5=true&
-//   f6(x,t)=&v6=true&
-//   grid=true&
-//   coords=0,0,1.3333333333333333
+// https://mathworld.wolfram.com/TriangleInterior.html
+// http://www.sunshine2k.de/coding/java/pointInTriangle/pointInTriangle.html
+// https://thebookofshaders.com/10/
 
-#define width 0.035
+bool intri(vec2 p, vec2 v1, vec2 v2, vec2 v3)
+{
+    vec2 w1 = v2 - v1;
+    vec2 w2 = v3 - v1;
+    float d = determinant(mat2(w1, w2));
+    // check for d ≈ 0.0 ?
+    float s = determinant(mat2(p - v1, w2)) / d;
+    float t = determinant(mat2(w1, p - v2)) / d;
+    return s >= 0.0 && t >= 0.0 && (s + t) <= 1.0;
+}
 
-float plot(vec2 st, float pct) {
-  // The step() interpolation receives two parameters.
-  // The first one is the limit or threshold, while
-  // the second one is the value we want to check or pass.
-  // Any value under the limit will return 0.0 while
-  // everything above the limit will return 1.0.
-  // 0 0 < < 0 - 0 =  0
-  // 0 1 < > 0 - 1 = -1
-  // 1 0 > < 1 - 0 =  1
-  // 1 1 > > 1 - 1 =  0
-  return step(pct - width, st.y) - step(pct + width, st.y);
+bool inhex(vec2 p, vec2 c, float R)
+{
+    float r = cos(radians(30.0)) * R;
+    vec2 v1 = c + vec2(+0.0 * r, +1.0 * R);
+    vec2 v2 = c + vec2(+1.0 * r, +0.5 * R);
+    vec2 v3 = c + vec2(+1.0 * r, -0.5 * R);
+    vec2 v4 = c + vec2(-0.0 * r, -1.0 * R);
+    vec2 v5 = c + vec2(-1.0 * r, -0.5 * R);
+    vec2 v6 = c + vec2(-1.0 * r, +0.5 * R);
+    return (
+        intri(p, c, v1, v2) ||
+        intri(p, c, v2, v3) ||
+        intri(p, c, v3, v4) ||
+        intri(p, c, v4, v5) ||
+        intri(p, c, v5, v6) ||
+        intri(p, c, v6, v1)
+    );
+}
+
+float random (vec2 st)
+{
+    return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
 }
 
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
-    vec2 p = fragCoord / iResolution.y;
+    vec2 p = fragCoord / iResolution.xy;
 
-    float f1 = 0.15;
-    float f2 = f1 * cos(radians(30.0));
-    float f3 = 0.5 * f1 / f2;
-    float f4 = p.x * f3 + floor(p.x / f2) * f1;
+    vec2 c = vec2(random(vec2(iTime + 01.0, iTime + 02.0)), random(vec2(iTime + 03.0, iTime + 04.0)));
+    float R = 0.05;
+    float r = cos(radians(30.0)) * R;
 
-    vec3 col = 0.5 + 0.5 * cos(iTime + p.xyx + vec3(0, 2, 4));
-
-    col = plot(p, f4) > 0.0 ? col : vec3(0);
+    vec3 col = vec3(0);
+    c = round(p / vec2(2.0 * r, 3.0 * R)) * vec2(2.0 * r, 3.0 * R);
+    if (distance(p, c) < R)
+        if (inhex(p, c, R))
+            col = 0.5 + 0.5 * cos(iTime + p.xyx + vec3(0, 2, 4));
 
     fragColor = vec4(col, 1.0);
 }
