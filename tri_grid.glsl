@@ -2,7 +2,8 @@
 
 #define width 0.035
 
-float plot(vec2 st, float pct) {
+float plot(vec2 st, float pct)
+{
   // The step() interpolation receives two parameters.
   // The first one is the limit or threshold, while
   // the second one is the value we want to check or pass.
