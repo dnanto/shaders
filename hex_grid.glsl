@@ -47,9 +47,8 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 
     vec3 col = vec3(0);
     c = round(p / vec2(2.0 * r, 3.0 * R)) * vec2(2.0 * r, 3.0 * R);
-    if (distance(p, c) < R)
-        if (inhex(p, c, R))
-            col = 0.5 + 0.5 * cos(iTime + p.xyx + vec3(0, 2, 4));
+    if (inhex(p, c, R))
+        col = 0.5 + 0.5 * cos(iTime + p.xyx + vec3(0, 2, 4));
 
     fragColor = vec4(col, 1.0);
 }
