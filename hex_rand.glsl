@@ -1,9 +1,7 @@
-// https://mathworld.wolfram.com/TriangleInterior.html
-// http://www.sunshine2k.de/coding/java/pointInTriangle/pointInTriangle.html
-// https://thebookofshaders.com/10/
-
 bool intri(vec2 p, vec2 v1, vec2 v2, vec2 v3)
 {
+  // https://mathworld.wolfram.com/TriangleInterior.html
+  // http://www.sunshine2k.de/coding/java/pointInTriangle/pointInTriangle.html
     vec2 w1 = v2 - v1;
     vec2 w2 = v3 - v1;
     float d = determinant(mat2(w1, w2));
@@ -34,6 +32,7 @@ bool inhex(vec2 p, vec2 c, float R)
 
 float random (vec2 st)
 {
+    // https://thebookofshaders.com/10/
     return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
 }
 

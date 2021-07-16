@@ -1,5 +1,3 @@
-// https://thebookofshaders.com/10/
-
 #define width 0.035
 
 float plot(vec2 st, float pct)

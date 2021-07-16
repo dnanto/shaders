@@ -1,9 +1,23 @@
-// https://mathworld.wolfram.com/TriangleInterior.html
-// http://www.sunshine2k.de/coding/java/pointInTriangle/pointInTriangle.html
-// https://thebookofshaders.com/10/
+#define width 0.005
+
+float plot(vec2 st, float pct)
+{
+  // The step() interpolation receives two parameters.
+  // The first one is the limit or threshold, while
+  // the second one is the value we want to check or pass.
+  // Any value under the limit will return 0.0 while
+  // everything above the limit will return 1.0.
+  // 0 0 < < 0 - 0 =  0
+  // 0 1 < > 0 - 1 = -1
+  // 1 0 > < 1 - 0 =  1
+  // 1 1 > > 1 - 1 =  0
+  return step(pct - width, st.y) - step(pct + width, st.y);
+}
 
 bool intri(vec2 p, vec2 v1, vec2 v2, vec2 v3)
 {
+    // https://mathworld.wolfram.com/TriangleInterior.html
+    // http://www.sunshine2k.de/coding/java/pointInTriangle/pointInTriangle.html
     vec2 w1 = v2 - v1;
     vec2 w2 = v3 - v1;
     float d = determinant(mat2(w1, w2));
@@ -34,19 +48,22 @@ bool inhex(vec2 p, vec2 c, float R)
 
 float random (vec2 st)
 {
+    // https://thebookofshaders.com/10/
     return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
 }
 
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
-    vec2 p = fragCoord / iResolution.xy;
+    float h = 3.0;
+    float k = 3.0;
 
-    vec2 c = vec2(random(vec2(iTime + 01.0, iTime + 02.0)), random(vec2(iTime + 03.0, iTime + 04.0)));
-    float R = 0.05;
+    vec2 p = fragCoord / iResolution.y;
+
+    float R = 0.25;
     float r = cos(radians(30.0)) * R;
 
     vec3 col = vec3(0);
-    c = round(p / vec2(2.0 * r, 3.0 * R)) * vec2(2.0 * r, 3.0 * R);
+    vec2 c = round(p / vec2(2.0 * r, 3.0 * R)) * vec2(2.0 * r, 3.0 * R);
     if (inhex(p, c, R))
         col = 0.5 + 0.5 * cos(iTime + p.xyx + vec3(0, 2, 4));
 
