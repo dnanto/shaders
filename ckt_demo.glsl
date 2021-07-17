@@ -1,6 +1,6 @@
 #define width 0.025
-#define h 17.0
-#define k 6.0
+#define h 6.0
+#define k 2.0
 
 float plot(vec2 st, float pct)
 {
@@ -14,6 +14,13 @@ float plot(vec2 st, float pct)
   // 1 0 > < 1 - 0 =  1
   // 1 1 > > 1 - 1 =  0
   return step(pct - width, st.y) - step(pct + width, st.y);
+}
+
+mat2 rotmat2(float theta)
+{
+    float c = cos(theta);
+    float s = sin(theta);
+    return mat2(c, s, -s, c);
 }
 
 bool intri(vec2 p, vec2 v1, vec2 v2, vec2 v3)
@@ -57,22 +64,23 @@ float random (vec2 st)
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
     vec2 p = fragCoord / iResolution.y;
-    p -= vec2(0.0, 0.5);
 
-    float R = 0.05;
+    float R = 0.075;
     float r = cos(radians(30.0)) * R;
 
-    vec3 col = vec3(0);
+    vec3 col = vec3(1);
     vec2 c = mat2(2. * r, 0., 0., 3.0 * R) * round(p / vec2(2.0 * r, 3.0 * R));
     if (inhex(p, c, R))
-        col = 0.5 + 0.5 * cos(iTime + p.xyx + vec3(0, 2, 4));
+        col = vec3(0.5);
 
     vec2 hvec = vec2(2.0 * r, 0.0 * R);
     vec2 kvec = vec2(1.0 * r, 1.5 * R);
 
-    vec2 t = k * kvec + h * hvec;
-    if (intri(p, vec2(0), t, vec2(t.x, -t.y)))
-        col = vec3(0.25);
+    vec2 t1 = h * hvec + k * kvec;
+    vec2 t2 = rotmat2(radians(60.0)) * t1;
+
+    if (intri(p, vec2(0), t1, t2))
+        col = mix(col, 0.5 + 0.5 * cos(iTime + p.xyx + vec3(0, 2, 4)), 0.5);
 
     fragColor = vec4(col, 1.0);
 }
