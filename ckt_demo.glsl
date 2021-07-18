@@ -1,6 +1,6 @@
 #define width 0.025
-#define h 6.0
-#define k 2.0
+#define h 1.0
+#define k 1.0
 
 float plot(vec2 st, float pct)
 {
@@ -36,23 +36,17 @@ bool intri(vec2 p, vec2 v1, vec2 v2, vec2 v3)
     return s >= 0.0 && t >= 0.0 && (s + t) <= 1.0;
 }
 
-bool inhex(vec2 p, vec2 c, float R)
+bool inreg(vec2 p, vec2 c, float n, float R, float theta)
 {
-    float r = cos(radians(30.0)) * R;
-    vec2 v1 = c + vec2(+0.0 * r, +1.0 * R);
-    vec2 v2 = c + vec2(+1.0 * r, +0.5 * R);
-    vec2 v3 = c + vec2(+1.0 * r, -0.5 * R);
-    vec2 v4 = c + vec2(-0.0 * r, -1.0 * R);
-    vec2 v5 = c + vec2(-1.0 * r, -0.5 * R);
-    vec2 v6 = c + vec2(-1.0 * r, +0.5 * R);
-    return (
-        intri(p, c, v1, v2) ||
-        intri(p, c, v2, v3) ||
-        intri(p, c, v3, v4) ||
-        intri(p, c, v4, v5) ||
-        intri(p, c, v5, v6) ||
-        intri(p, c, v6, v1)
-    );
+    float dt = radians(360.0 / n);
+    for (float i = 0.0, j = 1.0; i < 6.0; i++, j++)
+    {
+        vec2 a = vec2(R * cos(dt * i + theta) + c.x, R * sin(dt * i + theta) + c.y);
+        vec2 b = vec2(R * cos(dt * j + theta) + c.x, R * sin(dt * j + theta) + c.y);
+        if (intri(p, a, b, c))
+            return true;
+    }
+    return false;
 }
 
 float random (vec2 st)
@@ -70,7 +64,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 
     vec3 col = vec3(1);
     vec2 c = mat2(2. * r, 0., 0., 3.0 * R) * round(p / vec2(2.0 * r, 3.0 * R));
-    if (inhex(p, c, R))
+    if (inreg(p, c, 6.0, R, radians(30.0)))
         col = vec3(0.5);
 
     vec2 hvec = vec2(2.0 * r, 0.0 * R);
