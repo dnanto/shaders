@@ -32,25 +32,24 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
     vec2 uv = fragCoord / iResolution.y;
 
-    vec4 p1 = vec4(0.25, 0.25, 0.0, 1);
-    vec4 p2 = vec4(0.75, 0.25, 0.0, 1);
-    vec4 p3 = vec4(0.50, 0.75, 0.0, 1);;
+    vec4 p1 = vec4(0.25, 0.25, 0.25, 1);
+    vec4 p2 = vec4(0.75, 0.25, 0.25, 1);
+    vec4 p3 = vec4(0.50, 0.75, 0.25, 1);;
 
     vec3 c = (p1.xyz + p2.xyz + p3.xyz) / 3.0;
 
-    mat3 K = mat3(1);
-    vec3 C = vec3(c.x, c.y, 0);
-
-    vec3 angle = vec3(
+    vec3 a = vec3(
         radians(mod(iTime, 360.0) * 10.0),
         radians(mod(iTime, 360.0) * 15.0),
         radians(mod(iTime, 360.0) * 20.0)
     );
 
-    mat3 R = rotmat3(angle);
-
-    mat4x3 IC = mat4x3(mat3(1)); IC[3] = -C;
-    mat4x3 P = (K * R) * IC;
+    mat3 K = mat3(1);             // calibration
+    vec3 C = c;                   // translation
+    mat3 R = rotmat3(a);          // rotation
+    mat4x3 IC = mat4x3(mat3(1));
+    IC[3] = -C;
+    mat4x3 P = (K * R) * IC;      // projection
 
     vec3 q1 = P * p1 + c;
     vec3 q2 = P * p2 + c;
