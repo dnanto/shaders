@@ -64,7 +64,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     );
 
     mat3 K = mat3(1);             // calibration
-    vec3 C = vec3(0.);           // translation
+    vec3 C = vec3(0.);            // translation
     mat3 R = rotmat3(t);          // rotation
     mat4x3 IC = mat4x3(mat3(1));
     IC[3] = -C;
