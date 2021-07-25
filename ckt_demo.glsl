@@ -2,20 +2,6 @@
 #define h 6.0
 #define k 2.0
 
-float plot(vec2 st, float pct)
-{
-  // The step() interpolation receives two parameters.
-  // The first one is the limit or threshold, while
-  // the second one is the value we want to check or pass.
-  // Any value under the limit will return 0.0 while
-  // everything above the limit will return 1.0.
-  // 0 0 < < 0 - 0 =  0
-  // 0 1 < > 0 - 1 = -1
-  // 1 0 > < 1 - 0 =  1
-  // 1 1 > > 1 - 1 =  0
-  return step(pct - width, st.y) - step(pct + width, st.y);
-}
-
 mat2 rotmat2(float theta)
 {
     float c = cos(theta);
