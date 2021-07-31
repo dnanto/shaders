@@ -69,12 +69,6 @@ bool inreg(vec2 p, vec2 c, float n, float R, float theta)
     return false;
 }
 
-float random (vec2 st)
-{
-    // https://thebookofshaders.com/10/
-    return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
-}
-
 mat3 rotmat3(vec3 angle)
 {
     float sintht = sin(angle.x), sinpsi = sin(angle.y), sinphi = sin(angle.z);
@@ -115,10 +109,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 
     R -= R * 0.05;
 
-    if (inreg(p, c, 6.0, R, radians(30.0)))
-        col = vec3(0.5);
-
-    if (inreg(p, d, 6.0, R, radians(30.0)))
+    if (inreg(p, c, 6.0, R, radians(30.0)) || inreg(p, d, 6.0, R, radians(30.0)))
         col = vec3(1.0);
 
     if (inreg(p, vec2(0), 6.0, R, radians(30.0)))
@@ -168,6 +159,8 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     IC[3] = -C;
     mat4x3 P = (K * Q) * IC;      // projection
 
+    float min_z = 1.0;
+
     vec3 col = vec3(0);
     for (int i = 0; i < 20; i++)
     {
@@ -176,13 +169,11 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         vec3 q3 = P * v[int(f[i].z)] + 0.5;
         mat3 A = mat3(q1.x, q1.y, 1, q2.x, q2.y, 1, q3.x, q3.y, 1);
         vec3 iv = X * inverse(A) * vec3(uv.x, uv.y, 1);
-        col = mix(
-            col,
-            intri(uv, q1.xy, q2.xy, q3.xy) ?
-                texture(iChannel0, iv.xy).xyz :
-                col,
-            0.75
-        );
+        float z = min(min(q1.z, q2.z), q3.z);
+        if (z < min_z && intri(uv, q1.xy, q2.xy, q3.xy)) {
+            col = texture(iChannel0, iv.xy).xyz;
+            min_z = z;
+        }
     }
 
     fragColor = vec4(col, 1);
