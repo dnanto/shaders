@@ -169,7 +169,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         vec3 q3 = P * v[int(f[i].z)] + 0.5;
         mat3 A = mat3(q1.x, q1.y, 1, q2.x, q2.y, 1, q3.x, q3.y, 1);
         vec3 iv = X * inverse(A) * vec3(uv.x, uv.y, 1);
-        float z = min(min(q1.z, q2.z), q3.z);
+        float z = ((q1 + q2 + q3) / 3.0).z;
         if (z < min_z && intri(uv, q1.xy, q2.xy, q3.xy)) {
             col = texture(iChannel0, iv.xy).xyz;
             min_z = z;
