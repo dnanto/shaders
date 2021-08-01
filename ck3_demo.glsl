@@ -162,19 +162,47 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     float min_z = 1.0;
 
     vec3 col = vec3(0);
+
+    int n = 0;
+    vec3[20] c;
+    float[20] z;
+
     for (int i = 0; i < 20; i++)
     {
         vec3 q1 = P * v[int(f[i].x)] + 0.5;
         vec3 q2 = P * v[int(f[i].y)] + 0.5;
         vec3 q3 = P * v[int(f[i].z)] + 0.5;
-        mat3 A = mat3(q1.x, q1.y, 1, q2.x, q2.y, 1, q3.x, q3.y, 1);
-        vec3 iv = X * inverse(A) * vec3(uv.x, uv.y, 1);
-        float z = ((q1 + q2 + q3) / 3.0).z;
-        if (z < min_z && intri(uv, q1.xy, q2.xy, q3.xy)) {
-            col = texture(iChannel0, iv.xy).xyz;
-            min_z = z;
+        if (intri(uv, q1.xy, q2.xy, q3.xy))
+        {
+            mat3 A = mat3(q1.x, q1.y, 1, q2.x, q2.y, 1, q3.x, q3.y, 1);
+            vec3 iv = X * inverse(A) * vec3(uv.x, uv.y, 1);
+            c[n] = texture(iChannel0, iv.xy).xyz;
+            z[n] = ((q1 + q2 + q3) / 3.0).z;
+            n += 1;
         }
     }
+
+    int i = 1;
+    while (i < n) {
+        float x = z[i];
+        vec3 X = c[i];
+        int j = i - 1;
+        while (j >= 0 && z[j] > x) {
+            z[j+1] = z[j];
+            c[j+1] = c[j];
+            j = j - 1;
+        }
+        z[j+1] = x;
+        c[j+1] = X;
+        i = i + 1;
+    }
+
+    for (int i = 0; i < n; i++)
+        col = mix(
+            col,
+            c[i],
+            4.*0.5/20.*abs(mod(iTime-20./4., 20.)-20./2.)-0.5+0.5
+        );
 
     fragColor = vec4(col, 1);
 }
