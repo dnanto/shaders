@@ -92,7 +92,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
     vec2 p = fragCoord / iResolution.xy;
 
-    float R = 0.075;
+    float R = 1. / ((h + k) * 1.5);
     float r = cos(radians(30.0)) * R;
 
     vec2 hvec = vec2(2.0 * r, 0.0 * R);
@@ -131,7 +131,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
-    float R = 0.075;
+    float R = 1. / ((h + k) * 1.5);
     float r = cos(radians(30.0)) * R;
     vec2 hvec = vec2(2.0 * r, 0.0 * R);
     vec2 kvec = vec2(1.0 * r, 1.5 * R);
