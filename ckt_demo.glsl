@@ -1,4 +1,3 @@
-#define width 0.025
 #define h 6.0
 #define k 2.0
 
@@ -45,7 +44,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
     vec2 p = fragCoord / iResolution.y;
 
-    float R = 0.075;
+    float R = 1. / ((h + k) * 1.5);
     float r = cos(radians(30.0)) * R;
 
     vec2 hvec = vec2(2.0 * r, 0.0 * R);
@@ -55,30 +54,19 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     vec2 t2 = rotmat2(radians(60.0)) * t1;
 
     vec3 rnd = 0.5 + 0.5 * cos(iTime + p.xyx + vec3(0, 2, 4));
-    vec3 col = vec3(rnd);
 
     vec2 c = mat2(2.0 * r, 0.0, 0.0, 3.0 * R) * round(p / vec2(2.0 * r, 3.0 * R));
     vec2 d = mat2(2.0 * r, 0.0, 0.0, 3.0 * R) * floor(p / vec2(2.0 * r, 3.0 * R)) + vec2(1.0 * r, 1.5 * R);
 
-    R -= R * 0.05;
+    R -= R * 0.25;
 
-    if (inreg(p, c, 6.0, R, radians(30.0)))
+    vec3 col = intri(p, vec2(0), t1, t2) ? rnd : vec3(0.95);
+
+    if (inreg(p, c, 6.0, R, radians(30.0)) || inreg(p, d, 6.0, R, radians(30.0)))
         col = vec3(0.5);
 
-    if (inreg(p, d, 6.0, R, radians(30.0)))
-        col = vec3(1.0);
-
-    if (inreg(p, vec2(0), 6.0, R, radians(30.0)))
+    if (inreg(p, vec2(0), 6.0, R, radians(30.0)) || inreg(p, t1, 6.0, R, radians(30.0)) || inreg(p, t2, 6.0, R, radians(30.0)))
         col = vec3(0.25);
-
-    if (inreg(p, t1, 6.0, R, radians(30.0)))
-        col = vec3(0.25);
-
-    if (inreg(p, t2, 6.0, R, radians(30.0)))
-        col = vec3(0.25);
-
-    if (intri(p, vec2(0), t1, t2))
-        col = mix(col, rnd, 0.5);
 
     fragColor = vec4(col, 1.0);
 }
