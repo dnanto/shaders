@@ -1,6 +1,5 @@
 // Common
 
-#define width 0.025
 #define h 6.0
 #define k 2.0
 
