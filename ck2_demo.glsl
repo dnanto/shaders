@@ -65,16 +65,18 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
 
     R -= R * 0.05;
 
+    float theta = 30.0;
+
     if (
-        inreg(uv, hex1, 6.0, R, radians(30.0)) ||
-        inreg(uv, hex2, 6.0, R, radians(30.0))
+        inreg(uv, hex1, 6.0, R, radians(theta)) ||
+        inreg(uv, hex2, 6.0, R, radians(theta))
     )
         col = vec3(0.5);
 
     if (
-        inreg(uv, t0, 6.0, R, radians(30.0)) ||
-        inreg(uv, t1, 6.0, R, radians(30.0)) ||
-        inreg(uv, t2, 6.0, R, radians(30.0))
+        inreg(uv, t0, 6.0, R, radians(theta)) ||
+        inreg(uv, t1, 6.0, R, radians(theta)) ||
+        inreg(uv, t2, 6.0, R, radians(theta))
     )
         col = vec3(0.25);
 
