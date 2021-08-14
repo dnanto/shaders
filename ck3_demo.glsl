@@ -35,37 +35,11 @@ const vec3[] f = vec3[] (
   vec3(4, 11, 5), vec3(4, 8, 10)
 );
 
-bool intri(vec2 p, vec2 v1, vec2 v2, vec2 v3)
-{
-    // https://mathworld.wolfram.com/TriangleInterior.html
-    // http://www.sunshine2k.de/coding/java/pointInTriangle/pointInTriangle.html
-    vec2 w1 = v2 - v1;
-    vec2 w2 = v3 - v1;
-    float d = determinant(mat2(w1, w2));
-    // check for d ≈ 0.0 ?
-    float s = determinant(mat2(p - v1, w2)) / d;
-    float t = determinant(mat2(w1, p - v2)) / d;
-    return s >= 0.0 && t >= 0.0 && (s + t) <= 1.0;
-}
-
 mat2 rotmat2(float theta)
 {
     float c = cos(theta);
     float s = sin(theta);
     return mat2(c, s, -s, c);
-}
-
-bool inreg(vec2 p, vec2 c, float n, float R, float theta)
-{
-    float dt = radians(360.0 / n);
-    for (float i = 0.0, j = 1.0; i < 6.0; i++, j++)
-    {
-        vec2 a = vec2(R * cos(dt * i + theta) + c.x, R * sin(dt * i + theta) + c.y);
-        vec2 b = vec2(R * cos(dt * j + theta) + c.x, R * sin(dt * j + theta) + c.y);
-        if (intri(p, a, b, c))
-            return true;
-    }
-    return false;
 }
 
 mat3 rotmat3(vec3 angle)
@@ -83,6 +57,32 @@ mat3 rotmat3(vec3 angle)
         sintht * sinpsi * cosphi - costht * sinphi,
         cospsi * cosphi
     );
+}
+
+bool intri(vec2 uv, vec2 v1, vec2 v2, vec2 v3)
+{
+    // https://mathworld.wolfram.com/TriangleInterior.html
+    // http://www.sunshine2k.de/coding/java/pointInTriangle/pointInTriangle.html
+    vec2 w1 = v2 - v1;
+    vec2 w2 = v3 - v1;
+    float d = determinant(mat2(w1, w2));
+    // check for d ≈ 0.0 ?
+    float s = determinant(mat2(uv - v1, w2)) / d;
+    float t = determinant(mat2(w1, uv - v2)) / d;
+    return s >= 0.0 && t >= 0.0 && (s + t) <= 1.0;
+}
+
+bool inreg(vec2 uv, vec2 c, float n, float R, float theta)
+{
+    float dt = radians(360.0 / n);
+    for (float i = 0.0, j = 1.0; i < n; i++, j++)
+    {
+        vec2 a = R * vec2(cos(dt * i + theta), sin(dt * i + theta)) + c;
+        vec2 b = R * vec2(cos(dt * j + theta), sin(dt * j + theta)) + c;
+        if (intri(uv, a, b, c))
+            return true;
+    }
+    return false;
 }
 
 // Buffer A
