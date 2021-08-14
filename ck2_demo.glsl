@@ -44,28 +44,34 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
 {
     vec2 uv = fragCoord / iResolution.y;
 
-    float R = 1.0 / ((h + k) * 1.5);
+    // float R = 1.0 / ((h + k) * 1.5);
+    float R = 1.0 / ((h + k) * 2.0);
     float r = cos(radians(30.0)) * R;
 
-    uv.x += h < k ? r * (h - k) : 0.0;
+    // uv.x += h < k ? r * (h - k) : 0.0;
+    uv.x += h < k ? R * (h - k) : 0.0;
 
-    vec2 hvec = vec2(2.0 * r, 0.0 * R);
-    vec2 kvec = vec2(1.0 * r, 1.5 * R);
+    // vec2 hvec = vec2(2.0 * r, 0.0 * R);
+    // vec2 kvec = vec2(1.0 * r, 1.5 * R);
+    vec2 hvec = vec2(2.0 * R, 0.0 * r);
+    vec2 kvec = vec2(1.0 * R, 2.0 * r);
 
     vec2 t0 = vec2(0);
     vec2 t1 = mat2(hvec, kvec) * vec2(h, k);
     vec2 t2 = rotmat2(radians(60.0)) * t1;
 
-    mat2 b = mat2(2.0 * r, 0.0, 0.0, 3.0 * R);
+    // mat2 b = mat2(2.0 * r, 0.0, 0.0, 3.0 * R);
+    mat2 b = mat2(2.0 * R, 0.0, 0.0, 4.0 * r);
     vec2 hex1 = b * round(inverse(b) * uv);
-    vec2 hex2 = b * floor(inverse(b) * uv) + vec2(1.0 * r, 1.5 * R);
+    vec2 hex2 = b * floor(inverse(b) * uv) + vec2(1.0 * R, 2.0 * r);
 
     vec3 rnd = 0.5 + 0.5 * cos(iTime + uv.xyx + vec3(0, 2, 4));
     vec3 col = intri(uv, vec2(0), t1, t2) ? rnd : vec3(0.95);
 
     R -= R * 0.05;
 
-    float theta = 30.0;
+    // float theta = 30.0;
+    float theta = 0.0;
 
     if (
         inreg(uv, hex1, 6.0, R, radians(theta)) ||
