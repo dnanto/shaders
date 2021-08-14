@@ -63,6 +63,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     // mat2 b = mat2(2.0 * r, 0.0, 0.0, 3.0 * R);
     mat2 b = mat2(2.0 * R, 0.0, 0.0, 4.0 * r);
     vec2 hex1 = b * round(inverse(b) * uv);
+    // vec2 hex2 = b * floor(inverse(b) * uv) + vec2(1.0 * r, 1.5 * R);
     vec2 hex2 = b * floor(inverse(b) * uv) + vec2(1.0 * R, 2.0 * r);
 
     vec3 rnd = 0.5 + 0.5 * cos(iTime + uv.xyx + vec3(0, 2, 4));
