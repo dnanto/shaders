@@ -1,5 +1,5 @@
-#define h 9.0
-#define k 6.0
+#define h 6.0
+#define k 10.0
 
 mat2 rotmat2(float theta)
 {
@@ -48,7 +48,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     // float R = 1.0 / ((h + k) * 1.5);
     // float R = 1.0 / ((h + k) * 2.0);
     // float R = 1.0 / ((h + k) * 3.0 * cos(radians(30.0)) - k * cos(radians(30.0)));
-    float R = 1.0 / ((h + k) * 3.0 * cos(radians(30.0)) - k * cos(radians(30.0)));
+    float R = 1.0 / ((h + k) * (1.5 + sqrt(3.0) / 2.0));
     float r = cos(radians(30.0)) * R;
 
     // vec2 hvec = vec2(2.0 * r, 0.0    );
@@ -58,7 +58,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     // vec2 hvec = vec2(2.5 * R,       r);
     // vec2 kvec = vec2(0.5 * R, 3.0 * r);
     vec2 hvec = vec2(R + 2.0 * r, 0.0);
-    vec2 kvec = vec2(r + 0.5 * R, 1.5 * R + R * sqrt(3.0) / 2.0);
+    vec2 kvec = vec2(r + 0.5 * R, (1.5 + sqrt(3.0) / 2.0) * R);
 
     vec2 t0 = vec2(0);
     vec2 t1 = mat2(hvec, kvec) * vec2(h, k);
