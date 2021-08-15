@@ -105,5 +105,13 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     )
         col = vec3(0.25);
 
+    /*
+    if (
+        inreg(uv, hex1, 3.0, R, radians(theta)) ||
+        inreg(uv, hex1, 3.0, R, radians(theta + 180.0))
+    )
+        col = vec3(0.75);
+     */
+
     fragColor = vec4(col, 1.0);
 }
