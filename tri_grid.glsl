@@ -1,39 +1,61 @@
-#define width 0.035
-
-float plot(vec2 st, float pct)
+float cross2(vec2 p, vec2 q)
 {
-  // The step() interpolation receives two parameters.
-  // The first one is the limit or threshold, while
-  // the second one is the value we want to check or pass.
-  // Any value under the limit will return 0.0 while
-  // everything above the limit will return 1.0.
-  // 0 0 < < 0 - 0 =  0
-  // 0 1 < > 0 - 1 = -1
-  // 1 0 > < 1 - 0 =  1
-  // 1 1 > > 1 - 1 =  0
-  return step(pct - width, st.y) - step(pct + width, st.y);
+    return p.x * q.y - p.y * q.x;
 }
 
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
+bool intri(vec2 uv, vec2 v1, vec2 v2, vec2 v3)
 {
-    vec2 p = fragCoord / iResolution.y;
+    // https://mathworld.wolfram.com/TriangleInterior.html
+    // http://www.sunshine2k.de/coding/java/pointInTriangle/pointInTriangle.html
+    vec2 w1 = v2 - v1;
+    vec2 w2 = v3 - v1;
+    float d = determinant(mat2(w1, w2));
+    // check for d ≈ 0.0 ?
+    float s = determinant(mat2(uv - v1, w2)) / d;
+    float t = determinant(mat2(w1, uv - v2)) / d;
+    return s >= 0.0 && t >= 0.0 && (s + t) <= 1.0;
+}
 
-    float cos30 = sqrt(3.0) / 2.0;
-    float R = 0.25;
-    float r = R * cos30;
+bool inreg(vec2 uv, vec2 c, float n, float R, float theta)
+{
+    float dt = radians(360.0 / n);
+    for (float i = 0.0, j = 1.0; i < n; i++, j++)
+    {
+        vec2 a = R * vec2(cos(dt * i + theta), sin(dt * i + theta)) + c;
+        vec2 b = R * vec2(cos(dt * j + theta), sin(dt * j + theta)) + c;
+        if (intri(uv, a, b, c))
+            return true;
+    }
+    return false;
+}
 
-    vec3 col = 0.5 + 0.5 * cos(iTime + p.xyx + vec3(0, 2, 4));
+void mainImage(out vec4 fragColor, in vec2 fragCoord)
+{
 
-    float v = floor(p.y / r) ;
-    for (float i = 0.0; i < 8.0; i++)
-        if (abs(p.y - i * r) < width / 2.0)
-            col = vec3(0);
-    for (float i = -8.0; i < 8.0; i++)
-        if (plot(p, +cos30 / 0.5 * (p.x - i * R)) > 0.0)
-            col = vec3(0);
-    for (float i = 0.0; i < 12.0; i++)
-        if (plot(p, -cos30 / 0.5 * (p.x - i * R)) > 0.0)
-            col = vec3(0);
+    vec2 uv = fragCoord / iResolution.y;
+
+    float s = 0.25;
+    float R = s * sqrt(3.0) / 3.0;
+    float r = s * sqrt(3.0) / 6.0;
+    float a = 0.5 * s * sqrt(3.0);
+
+    vec2 hvec = vec2(s, 0);
+    vec2 kvec = vec2(s/2., a);
+    mat2 b = mat2(hvec, kvec);
+    vec2 tri = b * round(inverse(b) * uv);
+
+    vec3 col = vec3(1);
+    vec3 rnd = 0.5 + 0.5 * cos(iTime + uv.xyx + vec3(0, 2, 4));
+
+    // not 100% sure why this works, but it's based on the hex grid solution...
+    bool inhex = inreg(uv, tri, 3.0, R, radians(90.0));
+    if (!inhex)
+        if (cross2(vec2(1.5 * s, a), tri - uv) < 0.)
+            tri += (uv.x > tri.x) ? tri : -hvec;
+        else
+            tri += (uv.x > tri.x) ? tri : -kvec;
+
+    if (inhex || inreg(uv, tri, 3.0, R, radians(90.0))) col = vec3(rnd);
 
     fragColor = vec4(col, 1.0);
 }
