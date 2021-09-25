@@ -1,3 +1,5 @@
+#define TRI_LINE_WIDTH 0.005
+
 bool intri(vec2 uv, vec2 v1, vec2 v2, vec2 v3)
 {
     // https://mathworld.wolfram.com/TriangleInterior.html
@@ -24,6 +26,11 @@ bool inreg(vec2 uv, vec2 c, float n, float R, float theta)
     return false;
 }
 
+float distline(vec2 uv, vec2 p, float theta) {
+    // https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
+    return abs(cos(theta) * (p.y - uv.y) - sin(theta) * (p.x - uv.x));
+}
+
 void mainImage(out vec4 fragColor, in vec2 fragCoord)
 {
     vec2 uv = fragCoord / iResolution.y;
@@ -33,16 +40,36 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     float r = s * sqrt(3.0) / 6.0;
     float a = R + r;
 
-    uv.x -= s / 2.0;
-    uv.x += mod(floor(uv.y / a), 2.0) * 0.5 * s;
-
-    float ci = round(uv.x / s);
-    float ri = floor(uv.y / a);
-
-    vec2 p = vec2(s * ci, a * ri + r);
     vec3 col = 0.5 + 0.5 * cos(iTime + uv.xyx + vec3(0, 2, 4));
 
-    col = inreg(uv, p, 3.0, R, radians(90.0)) ? col : vec3(0);
+    {
+        vec2 uv = uv;
+
+        uv.x -= s / 2.0;
+        uv.x += mod(floor(uv.y / a), 2.0) * 0.5 * s;
+
+        float ci = round(uv.x / s);
+        float ri = floor(uv.y / a);
+
+        vec2 p = vec2(s * ci, a * ri + r);
+
+        col = inreg(uv, p, 3.0, R, radians(90.0)) ? col : vec3(0);
+    }
+
+    {
+        vec2 uv = uv;
+
+        uv.x += mod(floor(uv.y / a), 2.0) * 0.5 * s;
+
+        float ci = round(uv.x / s);
+        float ri = floor(uv.y / a);
+
+        vec2 p = vec2(s * ci, a * ri);
+
+        if (distline(uv, p, radians(60.0)) < TRI_LINE_WIDTH) col = vec3(0.5);
+        if (distline(uv, p, radians(-60.0)) < TRI_LINE_WIDTH) col = vec3(0.5);
+        if (abs(uv.y - a * round(uv.y / a)) < TRI_LINE_WIDTH) col = vec3(0.5);
+    }
 
     fragColor = vec4(col, 1.0);
 }
