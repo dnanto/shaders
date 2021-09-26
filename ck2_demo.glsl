@@ -1,14 +1,20 @@
 #define cos30 cos(radians(30.0))
 #define sqrt3 sqrt(3.0)
 
-#define MODE_HEX 0
-#define MODE_TRIHEX 1
-#define MODE_SNUBHEX 2
-#define MODE_RHOMBITRIHEX 3
+#define MODE_HEX 1
+#define MODE_TRIHEX 2
+#define MODE_SNUBHEX 3
+#define MODE_RHOMBITRIHEX 4
+#define MODE_DUALHEX 5
+#define MODE_DUALTRIHEX 6
+#define MODE_DUALSNUBHEX 7
+#define MODE_DUALRHOMBITRIHEX 8
 
 #define h 2.0
-#define k 3.0
-#define m MODE_RHOMBITRIHEX
+#define k 1.0
+#define m MODE_SNUBHEX
+
+#define TRI_LINE_WIDTH 0.0
 
 float cross2(vec2 p, vec2 q)
 {
@@ -48,6 +54,11 @@ bool inreg(vec2 uv, vec2 c, float n, float R, float theta)
     return false;
 }
 
+float distline(vec2 uv, vec2 p, float theta) {
+    // https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
+    return abs(cos(theta) * (p.y - uv.y) - sin(theta) * (p.x - uv.x));
+}
+
 float random (vec2 st)
 {
     // https://thebookofshaders.com/10/
@@ -80,7 +91,8 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
             theta = 0.0;
             break;
         case MODE_SNUBHEX:
-            R = 1.0 / ((h + k) * 3.0 * cos30 - k * cos30);
+            R = h < k / 2.0 ? k * 3.0 * cos30 + h * cos30 : h * 3.0 * cos30 + 2.0 * k * cos30;
+            R = 1.0 / R;
             r = cos30 * R;
             hvec = vec2(2.5 * R, r);
             kvec = vec2(0.5 * R, 3.0 * r);
@@ -104,7 +116,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     mat2 b = mat2(hvec, kvec);
     vec2 hex = b * round(inverse(b) * uv);
 
-    R -= R * 0.025;
+    R -= R * float(m == MODE_HEX) * 0.025;
 
     bool inhex = inreg(uv, hex, 6.0, R, radians(theta));
     if (!inhex)
@@ -114,25 +126,64 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
             hex += (uv.x > hex.x) ? hvec : -kvec;
 
     vec3 rnd = 0.5 + 0.5 * cos(iTime + uv.xyx + vec3(0, 2, 4));
-    vec3 col = intri(uv, vec2(0), t1, t2) ? rnd : vec3(0.90);
+    vec3 col = vec3(1);
 
-    if (inhex || inreg(uv, hex, 6.0, R, radians(theta)))
-        col = mix(col, vec3(0), 0.15); // vec3(0.5);
+    /*
+        if (
+            inreg(uv, hex, 3.0, R, radians(theta)) ||
+            inreg(uv, hex, 3.0, R, radians(theta + 180.0))
+        ) col = vec3(0.75);
+     */
 
-/*
+    if (inhex || inreg(uv, hex, 6.0, R, radians(theta))) col = vec3(0.5);
     if (
         inreg(uv, t0, 6.0, R, radians(theta)) ||
         inreg(uv, t1, 6.0, R, radians(theta)) ||
         inreg(uv, t2, 6.0, R, radians(theta))
-    )
-        col = mix(col, vec3(0), 0.25);
+    ) col = mix(col, vec3(0), 0.5);
 
-    if (
-        inreg(uv, hex, 3.0, R, radians(theta)) ||
-        inreg(uv, hex, 3.0, R, radians(theta + 180.0))
-    )
-        col = vec3(0.75);
-*/
+    switch (m) {
+        case MODE_SNUBHEX:
+        {
+            if (inhex) break;
+            float s = R;
+            float R = s * sqrt(3.0) / 3.0;
+            float r = s * sqrt(3.0) / 6.0;
+            float a = R + r;
+            {   // triangles
+                vec2 uv = uv;
+
+                uv.x -= s / 2.0;
+                uv.x += mod(floor(uv.y / a), 2.0) * 0.5 * s;
+
+                vec2 p = vec2(s * round(uv.x / s), a * floor(uv.y / a) + r);
+                col = inreg(uv, p, 3.0, R, radians(90.0)) ? col : vec3(0);
+            }
+            {   // lines
+                vec2 uv = uv;
+                uv.x += mod(floor(uv.y / a), 2.0) * 0.5 * s;
+
+                float ci = round(uv.x / s);
+                float ri = floor(uv.y / a);
+
+                vec2 p = vec2(s * ci, a * ri);
+
+                if (distline(uv, p, radians(60.0)) < TRI_LINE_WIDTH) col = vec3(0.25);
+                if (distline(uv, p, radians(-60.0)) < TRI_LINE_WIDTH) col = vec3(0.25);
+                if (abs(uv.y - a * round(uv.y / a)) < TRI_LINE_WIDTH) col = vec3(0.25);
+            }
+            break;
+        }
+        case MODE_DUALRHOMBITRIHEX:
+        {   // lines
+            if (distline(uv, hex, radians(60.0)) < 0.005) col = vec3(1.0);
+            if (distline(uv, hex, radians(-60.0)) < 0.005) col = vec3(1.0);
+            if (abs(uv.y - hex.y) < 0.005) col = vec3(1.0);
+            break;
+        }
+    }
+
+    if (intri(uv, vec2(0), t1, t2)) col = mix(rnd, col, 0.75);
 
     fragColor = vec4(col, 1.0);
 }
