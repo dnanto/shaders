@@ -10,11 +10,11 @@
 #define MODE_DUALSNUBHEX 7
 #define MODE_DUALRHOMBITRIHEX 8
 
-#define h 2.0
+#define h 4.0
 #define k 1.0
-#define m MODE_SNUBHEX
+#define m MODE_RHOMBITRIHEX
 
-#define TRI_LINE_WIDTH 0.0
+#define TRI_LINE_WIDTH 0.005
 
 float cross2(vec2 p, vec2 q)
 {
@@ -76,6 +76,8 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     vec2 hvec;
     vec2 kvec;
     switch (m) {
+        case MODE_DUALHEX:
+        case MODE_DUALRHOMBITRIHEX:
         case MODE_HEX:
             R = 1.0 / ((h + k) * 1.5);
             r = cos30 * R;
@@ -91,8 +93,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
             theta = 0.0;
             break;
         case MODE_SNUBHEX:
-            R = h < k / 2.0 ? k * 3.0 * cos30 + h * cos30 : h * 3.0 * cos30 + 2.0 * k * cos30;
-            R = 1.0 / R;
+            R = 1.0 / (h < k / 2.0 ? k * 3.0 * cos30 + h * cos30 : h * 3.0 * cos30 + 2.0 * k * cos30);
             r = cos30 * R;
             hvec = vec2(2.5 * R, r);
             kvec = vec2(0.5 * R, 3.0 * r);
@@ -102,7 +103,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
             R = 1.0 / ((h + k) * (1.5 + sqrt3 / 2.0));
             r = cos30 * R;
             hvec = vec2(R + 2.0 * r, 0.0);
-            kvec = vec2(r + 0.5 * R, (1.5 + sqrt(3.0) / 2.0) * R);
+            kvec = vec2(r + 0.5 * R, (1.5 + sqrt3 / 2.0) * R);
             theta = 30.0;
             break;
     }
@@ -116,7 +117,8 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     mat2 b = mat2(hvec, kvec);
     vec2 hex = b * round(inverse(b) * uv);
 
-    R -= R * float(m == MODE_HEX) * 0.025;
+    if (m == MODE_HEX || m == MODE_DUALHEX || m == MODE_DUALRHOMBITRIHEX)
+        R -= R * 0.025;
 
     bool inhex = inreg(uv, hex, 6.0, R, radians(theta));
     if (!inhex)
@@ -147,8 +149,8 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
         {
             if (inhex) break;
             float s = R;
-            float R = s * sqrt(3.0) / 3.0;
-            float r = s * sqrt(3.0) / 6.0;
+            float R = s * sqrt3 / 3.0;
+            float r = s * sqrt3 / 6.0;
             float a = R + r;
             {   // triangles
                 vec2 uv = uv;
@@ -171,6 +173,29 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
                 if (distline(uv, p, radians(60.0)) < TRI_LINE_WIDTH) col = vec3(0.25);
                 if (distline(uv, p, radians(-60.0)) < TRI_LINE_WIDTH) col = vec3(0.25);
                 if (abs(uv.y - a * round(uv.y / a)) < TRI_LINE_WIDTH) col = vec3(0.25);
+            }
+            break;
+        }
+        case MODE_RHOMBITRIHEX:
+        {   // triangles
+            if (inhex) break;
+            float s = R;
+            float R = s * sqrt3 / 3.0;
+            float r = s * sqrt3 / 6.0;
+            float dx = s + 6. * r;
+            float dy = 3.0 * s + 2.0 * R + 2.0 * r;
+            {
+                vec2 uv = uv;
+                uv.x += mod(floor(uv.y / dy), 2.0) * 0.5 * dx;
+                vec2 p = vec2(dx * round(uv.x / dx), dy * floor(uv.y / dy));
+                vec2 off1 = vec2(0, 2.0 * s + R + 2.0 * r);
+                vec2 off2 = vec2(0, s + R);
+                vec2 off3 = vec2(0, 0.5 * s + r + R + s + s + R);
+                if (
+                    !inreg(uv, p + off1, 3.0, R, radians(90.0)) &&
+                    !inreg(uv, p + off2, 3.0, R, radians(-90.0)) &&
+                    !inreg(uv, p + off3, 3.0, R, radians(-90.0))
+                ) col = vec3(0);
             }
             break;
         }
