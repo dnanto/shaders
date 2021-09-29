@@ -12,7 +12,7 @@
 
 #define h 4.0
 #define k 1.0
-#define m MODE_DUALRHOMBITRIHEX
+#define m MODE_DUALTRIHEX
 
 #define TRI_LINE_WIDTH 0.000
 
@@ -85,6 +85,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
             kvec = vec2(r, 1.5 * R);
             theta = 30.0;
             break;
+        case MODE_DUALTRIHEX:
         case MODE_TRIHEX:
             R = 1.0 / ((h + k) * 2.0 * cos30);
             r = cos30 * R;
@@ -130,20 +131,12 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     vec3 rnd = 0.5 + 0.5 * cos(iTime + uv.xyx + vec3(0, 2, 4));
     vec3 col = vec3(1);
 
-    /*
-        if (
-            inreg(uv, hex, 3.0, R, radians(theta)) ||
-            inreg(uv, hex, 3.0, R, radians(theta + 180.0))
-        ) col = vec3(0.75);
-     */
-
     if (inhex || inreg(uv, hex, 6.0, R, radians(theta))) col = vec3(0.5);
     if (
         inreg(uv, t0, 6.0, R, radians(theta)) ||
         inreg(uv, t1, 6.0, R, radians(theta)) ||
         inreg(uv, t2, 6.0, R, radians(theta))
     ) col = mix(col, vec3(0), 0.5);
-
 
     float R3 = R * sqrt3 / 3.0;
     float r3 = R * sqrt3 / 6.0;
@@ -197,6 +190,12 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
             }
             break;
         }
+        case MODE_DUALTRIHEX:
+            col = vec3(1);
+            if (
+                inreg(uv, hex, 3.0, R, radians(theta)) ||
+                inreg(uv, hex, 3.0, R, radians(theta + 180.0))
+            ) col = vec3(0.75);
         case MODE_DUALRHOMBITRIHEX:
         {   // lines
             if (distline(uv, hex, radians(+60.0)) < 0.0025) col = vec3(1.0);
