@@ -12,9 +12,9 @@
 
 #define h 4.0
 #define k 1.0
-#define m MODE_RHOMBITRIHEX
+#define m MODE_DUALRHOMBITRIHEX
 
-#define TRI_LINE_WIDTH 0.005
+#define TRI_LINE_WIDTH 0.000
 
 float cross2(vec2 p, vec2 q)
 {
@@ -144,66 +144,64 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
         inreg(uv, t2, 6.0, R, radians(theta))
     ) col = mix(col, vec3(0), 0.5);
 
+
+    float R3 = R * sqrt3 / 3.0;
+    float r3 = R * sqrt3 / 6.0;
+    float a = R3 + r3;
     switch (m) {
         case MODE_SNUBHEX:
         {
-            if (inhex) break;
-            float s = R;
-            float R = s * sqrt3 / 3.0;
-            float r = s * sqrt3 / 6.0;
-            float a = R + r;
-            {   // triangles
-                vec2 uv = uv;
+            if (!inhex) {
+                {   // triangles
+                    vec2 uv = uv;
 
-                uv.x -= s / 2.0;
-                uv.x += mod(floor(uv.y / a), 2.0) * 0.5 * s;
+                    uv.x -= R / 2.0;
+                    uv.x += mod(floor(uv.y / a), 2.0) * 0.5 * R;
 
-                vec2 p = vec2(s * round(uv.x / s), a * floor(uv.y / a) + r);
-                col = inreg(uv, p, 3.0, R, radians(90.0)) ? col : vec3(0);
-            }
-            {   // lines
-                vec2 uv = uv;
-                uv.x += mod(floor(uv.y / a), 2.0) * 0.5 * s;
+                    vec2 p = vec2(R * round(uv.x / R), a * floor(uv.y / a) + r3);
+                    col = inreg(uv, p, 3.0, R3, radians(90.0)) ? col : vec3(0);
+                }
+                {   // lines
+                    vec2 uv = uv;
+                    uv.x += mod(floor(uv.y / a), 2.0) * 0.5 * R;
 
-                float ci = round(uv.x / s);
-                float ri = floor(uv.y / a);
+                    float ci = round(uv.x / R);
+                    float ri = floor(uv.y / a);
 
-                vec2 p = vec2(s * ci, a * ri);
+                    vec2 p = vec2(R * ci, a * ri);
 
-                if (distline(uv, p, radians(60.0)) < TRI_LINE_WIDTH) col = vec3(0.25);
-                if (distline(uv, p, radians(-60.0)) < TRI_LINE_WIDTH) col = vec3(0.25);
-                if (abs(uv.y - a * round(uv.y / a)) < TRI_LINE_WIDTH) col = vec3(0.25);
+                    if (distline(uv, p, radians(+60.0)) < TRI_LINE_WIDTH) col = vec3(0.25);
+                    if (distline(uv, p, radians(-60.0)) < TRI_LINE_WIDTH) col = vec3(0.25);
+                    if (abs(uv.y - a * round(uv.y / a)) < TRI_LINE_WIDTH) col = vec3(0.25);
+                }
             }
             break;
         }
         case MODE_RHOMBITRIHEX:
         {   // triangles
-            if (inhex) break;
-            float s = R;
-            float R = s * sqrt3 / 3.0;
-            float r = s * sqrt3 / 6.0;
-            float dx = s + 6. * r;
-            float dy = 3.0 * s + 2.0 * R + 2.0 * r;
-            {
-                vec2 uv = uv;
-                uv.x += mod(floor(uv.y / dy), 2.0) * 0.5 * dx;
-                vec2 p = vec2(dx * round(uv.x / dx), dy * floor(uv.y / dy));
-                vec2 off1 = vec2(0, 2.0 * s + R + 2.0 * r);
-                vec2 off2 = vec2(0, s + R);
-                vec2 off3 = vec2(0, 0.5 * s + r + R + s + s + R);
-                if (
-                    !inreg(uv, p + off1, 3.0, R, radians(90.0)) &&
-                    !inreg(uv, p + off2, 3.0, R, radians(-90.0)) &&
-                    !inreg(uv, p + off3, 3.0, R, radians(-90.0))
-                ) col = vec3(0);
+            if (!inhex) {
+                float dx = R + r + r;
+                float dy = R + a + R + a + R;
+                {
+                    vec2 p = vec2(dx * round(uv.x / dx), dy * round(uv.y / dy));
+                    float radius = r + R;
+                    if (
+                        inreg(uv, p + vec2(0, +(R + R3)), 3.0, R3, radians(-90.0))                    ||
+                        inreg(uv, p + vec2(0, -(R + R3)), 3.0, R3, radians(+90.0))                    ||
+                        inreg(uv, p + vec2(+(r + R / 2.0), +(R / 2.0 + r3)), 3.0, R3, radians(+90.0)) ||
+                        inreg(uv, p + vec2(-(r + R / 2.0), +(R / 2.0 + r3)), 3.0, R3, radians(+90.0)) ||
+                        inreg(uv, p + vec2(+(r + R / 2.0), -(R / 2.0 + r3)), 3.0, R3, radians(-90.0)) ||
+                        inreg(uv, p + vec2(-(r + R / 2.0), -(R / 2.0 + r3)), 3.0, R3, radians(-90.0))
+                     ) col = vec3(0.75);
+                }
             }
             break;
         }
         case MODE_DUALRHOMBITRIHEX:
         {   // lines
-            if (distline(uv, hex, radians(60.0)) < 0.005) col = vec3(1.0);
-            if (distline(uv, hex, radians(-60.0)) < 0.005) col = vec3(1.0);
-            if (abs(uv.y - hex.y) < 0.005) col = vec3(1.0);
+            if (distline(uv, hex, radians(+60.0)) < 0.0025) col = vec3(1.0);
+            if (distline(uv, hex, radians(-60.0)) < 0.0025) col = vec3(1.0);
+            if (abs(uv.y - hex.y) < 0.0025) col = vec3(1.0);
             break;
         }
     }
