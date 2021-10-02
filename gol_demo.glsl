@@ -30,6 +30,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     // update cell state if it contains the uv
     if (distance(uv, cell) < r) {
         if (iFrame < 60) {
+            // set random initial state
             col = vec3(fract(random(iTime + cell * iTime)) <= P ? ON : OFF);
         } else {
             // get ON/OFF state of Moore neighborhood
