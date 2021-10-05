@@ -14,7 +14,7 @@
 
 #define h 4.0
 #define k 1.0
-#define m 5
+#define m MODE_DUALTRIHEX
 
 struct Params {
     float R;
@@ -184,7 +184,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     switch (m) {
         case MODE_SNUBHEX:
         {
-            if (!inhex) {
+            // if (!inhex) {
                 /*
                 {   // triangles
                     vec2 uv = uv;
@@ -202,7 +202,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
                     if (distline(uv, c, radians(-60.0)) < dw) col = vec3(0.25);
                     if (abs(uv.y - a * round(uv.y / a)) < dw) col = vec3(0.25);
                 }
-            }
+            // }
             break;
         }
         case MODE_RHOMBITRIHEX:
@@ -229,11 +229,13 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
         }
         case MODE_DUALTRIHEX:
         {
-            col = vec3(1);
             if (
                 inreg(uv, hex, 3.0, p.R, p.theta) ||
                 inreg(uv, hex, 3.0, p.R, p.theta + radians(180.0))
-            ) col = vec3(0.75);
+            )
+                col = inhex ? col : vec3(0.75);
+            else
+                col = vec3(1);
             if (distline(uv, hex, radians(+60.0)) < dw) col = vec3(1.0);
             if (distline(uv, hex, radians(-60.0)) < dw) col = vec3(1.0);
             if (abs(uv.y - hex.y) < dw) col = vec3(1.0);
@@ -253,13 +255,13 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
         }
         case MODE_DUALSNUBHEX:
         {
-            mat2 b = mat2(p.hvec * 2.0, p.kvec * 2.0);
             if (in_hex_floret(uv, t0, p.R + R3) ||
                 in_hex_floret(uv, t1, p.R + R3) ||
                 in_hex_floret(uv, t2, p.R + R3)
             ) col = vec3(0.5);
             else {
                 bool in_hex = false;
+                mat2 b = mat2(p.hvec * 2.0, p.kvec * 2.0);
                 {
                     vec2 hex = b * round(inverse(b) * uv);
                     in_hex = in_hex_floret(uv, hex, p.R + R3);
