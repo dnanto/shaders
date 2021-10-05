@@ -14,7 +14,7 @@
 
 #define h 4.0
 #define k 1.0
-#define m MODE_SNUBHEX
+#define m 5
 
 struct Params {
     float R;
@@ -25,44 +25,49 @@ struct Params {
 };
 
 Params mode_to_params(int mode) {
-    float R;
-    float r;
-    float theta;
-    vec2 hvec;
-    vec2 kvec;
+    float R, r, theta;
+    vec2 hvec, kvec;
     switch (m) {
         case MODE_DUALHEX:
         case MODE_DUALRHOMBITRIHEX:
         case MODE_HEX:
+        {
             R = 1.0 / ((h + k) * 1.5);
             r = cos30 * R;
             theta = 30.0;
             hvec = vec2(2.0 * r, 0.0);
             kvec = vec2(r, 1.5 * R);
             break;
+        }
         case MODE_DUALTRIHEX:
         case MODE_TRIHEX:
+        {
             R = 1.0 / ((h + k) * 2.0 * cos30);
             r = cos30 * R;
             theta = 0.0;
             hvec = vec2(2.0 * R, 0.0);
             kvec = vec2(R, 2.0 * r);
             break;
+        }
         case MODE_DUALSNUBHEX:
         case MODE_SNUBHEX:
+        {
             R = 1.0 / (h < k / 2.0 ? k * 3.0 * cos30 + h * cos30 : h * 3.0 * cos30 + 2.0 * k * cos30);
             r = cos30 * R;
             theta = 0.0;
             hvec = vec2(2.5 * R, r);
             kvec = vec2(0.5 * R, 3.0 * r);
             break;
+        }
         case MODE_RHOMBITRIHEX:
+        {
             R = 1.0 / ((h + k) * (1.5 + sqrt3 / 2.0));
             r = cos30 * R;
             theta = 30.0;
             hvec = vec2(R + 2.0 * r, 0.0);
             kvec = vec2(r + 0.5 * R, (1.5 + sqrt3 / 2.0) * R);
             break;
+        }
     }
     return Params(R, r, radians(theta), hvec, kvec);
 }
@@ -127,7 +132,6 @@ bool in_hex_floret(vec2 uv, vec2 c, float R) {
     return false;
 }
 
-
 float distline(vec2 uv, vec2 p, float theta) {
     // https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
     return abs(cos(theta) * (p.y - uv.y) - sin(theta) * (p.x - uv.x));
@@ -179,7 +183,9 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     float a = R3 + r3;
     switch (m) {
         case MODE_SNUBHEX:
+        {
             if (!inhex) {
+                /*
                 {   // triangles
                     vec2 uv = uv;
                     uv.x -= p.R / 2.0;
@@ -187,19 +193,20 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
                     vec2 c = vec2(p.R * round(uv.x / p.R), a * floor(uv.y / a) + r3);
                     col = inreg(uv, c, 3.0, R3, radians(90.0)) ? col : vec3(0);
                 }
+                */
                 {   // lines
                     vec2 uv = uv;
                     uv.x += mod(floor(uv.y / a), 2.0) * 0.5 * p.R;
-                    float ci = round(uv.x / p.R);
-                    float ri = floor(uv.y / a);
-                    vec2 c = vec2(p.R * ci, a * ri);
+                    vec2 c = vec2(p.R * round(uv.x / p.R), a * floor(uv.y / a));
                     if (distline(uv, c, radians(+60.0)) < dw) col = vec3(0.25);
                     if (distline(uv, c, radians(-60.0)) < dw) col = vec3(0.25);
                     if (abs(uv.y - a * round(uv.y / a)) < dw) col = vec3(0.25);
                 }
             }
             break;
+        }
         case MODE_RHOMBITRIHEX:
+        {
             if (!inhex) {
                 float R = p.R;
                 float r = p.r;
@@ -219,67 +226,70 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
                 }
             }
             break;
+        }
         case MODE_DUALTRIHEX:
+        {
+            col = vec3(1);
+            if (
+                inreg(uv, hex, 3.0, p.R, p.theta) ||
+                inreg(uv, hex, 3.0, p.R, p.theta + radians(180.0))
+            ) col = vec3(0.75);
+            if (distline(uv, hex, radians(+60.0)) < dw) col = vec3(1.0);
+            if (distline(uv, hex, radians(-60.0)) < dw) col = vec3(1.0);
+            if (abs(uv.y - hex.y) < dw) col = vec3(1.0);
+            Params q = mode_to_params(MODE_HEX);
             {
-                col = vec3(1);
+                vec2 hex = b * round(inverse(b) * uv);
+                if (cross2(vec2(p.r, 0.5 * p.R), hex - uv) < 0.)
+                    hex += (uv.x > hex.x) ? p.kvec : -p.hvec;
+                else
+                    hex += (uv.x > hex.x) ? p.hvec : -p.kvec;
                 if (
-                    inreg(uv, hex, 3.0, p.R, p.theta) ||
-                    inreg(uv, hex, 3.0, p.R, p.theta + radians(180.0))
-                ) col = vec3(0.75);
-                if (distline(uv, hex, radians(+60.0)) < dw) col = vec3(1.0);
-                if (distline(uv, hex, radians(-60.0)) < dw) col = vec3(1.0);
-                if (abs(uv.y - hex.y) < dw) col = vec3(1.0);
-                Params q = mode_to_params(MODE_HEX);
+                     inreg(uv, hex, 6.0, p.R / cos30 + dw, radians(30.0)) &&
+                    !inreg(uv, hex, 6.0, p.R / cos30 - dw, radians(30.0))
+                ) col = vec3(0.0);
+            }
+            break;
+        }
+        case MODE_DUALSNUBHEX:
+        {
+            mat2 b = mat2(p.hvec * 2.0, p.kvec * 2.0);
+            if (in_hex_floret(uv, t0, p.R + R3) ||
+                in_hex_floret(uv, t1, p.R + R3) ||
+                in_hex_floret(uv, t2, p.R + R3)
+            ) col = vec3(0.5);
+            else {
+                bool in_hex = false;
                 {
                     vec2 hex = b * round(inverse(b) * uv);
-                    if (cross2(vec2(p.r, 0.5 * p.R), hex - uv) < 0.)
-                        hex += (uv.x > hex.x) ? p.kvec : -p.hvec;
-                    else
-                        hex += (uv.x > hex.x) ? p.hvec : -p.kvec;
-                    if (
-                         inreg(uv, hex, 6.0, p.R / cos30 + dw, radians(30.0)) &&
-                        !inreg(uv, hex, 6.0, p.R / cos30 - dw, radians(30.0))
-                    ) col = vec3(0.0);
+                    in_hex = in_hex_floret(uv, hex, p.R + R3);
                 }
+                if (!in_hex) {
+                    vec2 uv = uv - p.hvec;
+                    vec2 hex = b * round(inverse(b) * uv);
+                    in_hex = in_hex_floret(uv, hex, p.R + R3);
+                }
+                if (!in_hex) {
+                    vec2 uv = uv + p.kvec;
+                    vec2 hex = b * round(inverse(b) * uv);
+                    in_hex = in_hex_floret(uv, hex, p.R + R3);
+                }
+                if (!in_hex) {
+                    vec2 uv = uv + p.hvec + p.kvec;
+                    vec2 hex = b * round(inverse(b) * uv);
+                    in_hex = in_hex_floret(uv, hex, p.R + R3);
+                }
+                if (in_hex) col = vec3(0.75);
             }
             break;
-        case MODE_DUALSNUBHEX:
-            {
-                mat2 b = mat2(p.hvec * 2.0, p.kvec * 2.0);
-                if (in_hex_floret(uv, t0, p.R + R3) ||
-                    in_hex_floret(uv, t1, p.R + R3) ||
-                    in_hex_floret(uv, t2, p.R + R3)
-                ) col = vec3(0.5);
-                else {
-                    bool in_hex = false;
-                    {
-                        vec2 hex = b * round(inverse(b) * uv);
-                        in_hex = in_hex_floret(uv, hex, p.R + R3);
-                    }
-                    if (!in_hex) {
-                        vec2 uv = uv - p.hvec;
-                        vec2 hex = b * round(inverse(b) * uv);
-                        in_hex = in_hex_floret(uv, hex, p.R + R3);
-                    }
-                    if (!in_hex) {
-                        vec2 uv = uv + p.kvec;
-                        vec2 hex = b * round(inverse(b) * uv);
-                        in_hex = in_hex_floret(uv, hex, p.R + R3);
-                    }
-                    if (!in_hex) {
-                        vec2 uv = uv + p.hvec + p.kvec;
-                        vec2 hex = b * round(inverse(b) * uv);
-                        in_hex = in_hex_floret(uv, hex, p.R + R3);
-                    }
-                    if (in_hex) col = vec3(0.75);
-                }
-            }
-            break;
+        }
         case MODE_DUALRHOMBITRIHEX:
+        {
             if (distline(uv, hex, radians(+60.0)) < dw) col = vec3(1.0);
             if (distline(uv, hex, radians(-60.0)) < dw) col = vec3(1.0);
             if (abs(uv.y - hex.y) < dw) col = vec3(1.0);
             break;
+        }
     }
 
     if (intri(uv, vec2(0), t1, t2)) col = mix(rnd, col, 0.75);
