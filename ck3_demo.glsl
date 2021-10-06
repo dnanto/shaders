@@ -16,7 +16,7 @@
 
 #define h 5.0
 #define k 5.0
-#define m 5
+#define m MODE_DUALTRIHEX
 
 struct Params {
     float R;
