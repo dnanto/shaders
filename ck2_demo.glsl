@@ -222,7 +222,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
                         inreg(uv, c + vec2(-(r + R / 2.0), +(R / 2.0 + r3)), 3.0, R3, radians(+90.0)) ||
                         inreg(uv, c + vec2(+(r + R / 2.0), -(R / 2.0 + r3)), 3.0, R3, radians(-90.0)) ||
                         inreg(uv, c + vec2(-(r + R / 2.0), -(R / 2.0 + r3)), 3.0, R3, radians(-90.0))
-                     ) col = vec3(0.75);
+                    ) col = vec3(0.75);
                 }
             }
             break;

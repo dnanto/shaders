@@ -14,9 +14,9 @@
 
 #define WIDTH 0.025
 
-#define h 2.0
-#define k 1.0
-#define m MODE_DUALRHOMBITRIHEX
+#define h 5.0
+#define k 5.0
+#define m 5
 
 struct Params {
     float R;
@@ -198,7 +198,7 @@ mat3 rotmat3(vec3 angle)
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord)
 {
-    vec2 uv = fragCoord / iResolution.xy;
+    vec2 uv = fragCoord / iResolution.y;
 
     Params p = mode_to_params(m);
 
@@ -237,7 +237,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     switch (m) {
         case MODE_SNUBHEX:
         {
-            if (!inhex) {
+            // if (!inhex) {
                 /*
                 {   // triangles
                     vec2 uv = uv;
@@ -255,7 +255,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
                     if (distline(uv, c, radians(-60.0)) < dw) col = vec3(0.25);
                     if (abs(uv.y - a * round(uv.y / a)) < dw) col = vec3(0.25);
                 }
-            }
+            // }
             break;
         }
         case MODE_RHOMBITRIHEX:
@@ -275,18 +275,20 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
                         inreg(uv, c + vec2(-(r + R / 2.0), +(R / 2.0 + r3)), 3.0, R3, radians(+90.0)) ||
                         inreg(uv, c + vec2(+(r + R / 2.0), -(R / 2.0 + r3)), 3.0, R3, radians(-90.0)) ||
                         inreg(uv, c + vec2(-(r + R / 2.0), -(R / 2.0 + r3)), 3.0, R3, radians(-90.0))
-                     ) col = vec3(0.75);
+                    ) col = vec3(0.75);
                 }
             }
             break;
         }
         case MODE_DUALTRIHEX:
         {
-            col = vec3(1);
             if (
                 inreg(uv, hex, 3.0, p.R, p.theta) ||
                 inreg(uv, hex, 3.0, p.R, p.theta + radians(180.0))
-            ) col = vec3(0.75);
+            )
+                col = inhex ? col : vec3(0.75);
+            else
+                col = vec3(1);
             if (distline(uv, hex, radians(+60.0)) < dw) col = vec3(1.0);
             if (distline(uv, hex, radians(-60.0)) < dw) col = vec3(1.0);
             if (abs(uv.y - hex.y) < dw) col = vec3(1.0);
@@ -306,13 +308,13 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
         }
         case MODE_DUALSNUBHEX:
         {
-            mat2 b = mat2(p.hvec * 2.0, p.kvec * 2.0);
             if (in_hex_floret(uv, t0, p.R + R3) ||
                 in_hex_floret(uv, t1, p.R + R3) ||
                 in_hex_floret(uv, t2, p.R + R3)
             ) col = vec3(0.5);
             else {
                 bool in_hex = false;
+                mat2 b = mat2(p.hvec * 2.0, p.kvec * 2.0);
                 {
                     vec2 hex = b * round(inverse(b) * uv);
                     in_hex = in_hex_floret(uv, hex, p.R + R3);
@@ -354,11 +356,15 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
 
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
-    vec2 uv = fragCoord / iResolution.xy;
+    vec2 uv = fragCoord / iResolution.y;
+    uv -= vec2(iResolution.x / iResolution.y / 2.0, 0.5);
 
     Params p = mode_to_params(m);
+
     vec2 t1 = mat2(p.hvec, p.kvec) * vec2(h, k);
     vec2 t2 = rotmat2(radians(60.0)) * t1;
+    t1.x /= iResolution.x / iResolution.y;
+    t2.x /= iResolution.x / iResolution.y;
 
     mat3 X = mat3(
         0, 0, 1,
@@ -389,12 +395,16 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 
     for (int i = 0; i < 20; i++)
     {
-        vec3 q1 = P * v[int(f[i].x)] + 0.5;
-        vec3 q2 = P * v[int(f[i].y)] + 0.5;
-        vec3 q3 = P * v[int(f[i].z)] + 0.5;
+        vec3 q1 = P * v[int(f[i].x)];
+        vec3 q2 = P * v[int(f[i].y)];
+        vec3 q3 = P * v[int(f[i].z)];
         if (intri(uv, q1.xy, q2.xy, q3.xy))
         {
-            mat3 A = mat3(q1.x, q1.y, 1, q2.x, q2.y, 1, q3.x, q3.y, 1);
+            mat3 A = mat3(
+                q1.x, q1.y, 1,
+                q2.x, q2.y, 1,
+                q3.x, q3.y, 1
+            );
             vec3 iv = X * inverse(A) * vec3(uv.x, uv.y, 1);
             iv.x -= t2.x < 0.0 ? t2.x : 0.0;
             c[n] = texture(iChannel0, iv.xy).xyz;
@@ -418,7 +428,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         i = i + 1;
     }
 
-    for (int i = 0; i < n; i++) col = mix(col, c[i], 1.0);
+    for (int i = 0; i < n; i++) col = mix(col, c[i], 0.5);
 
     fragColor = vec4(col, 1);
 }
