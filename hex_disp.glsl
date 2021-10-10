@@ -44,12 +44,6 @@ bool inreg(vec2 uv, vec2 c, float n, float R, float theta)
     return false;
 }
 
-float random (vec2 st)
-{
-    // https://thebookofshaders.com/10/
-    return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
-}
-
 vec2 uv_to_hex(vec2 uv, float R) {
     // get central hex coordinate
     float r = R * COS30;
@@ -69,12 +63,12 @@ vec2 uv_to_hex(vec2 uv, float R) {
 }
 
 vec3 hex_display(vec2 uv, vec2 pos, float chr, float R, float B, vec3 col) {
-    // uv the uv
+    // uv  the uv
     // pos the centreal display position
     // chr the character code to display
-    // R the hexagon circumradius
-    // B the border width
-    // col default color
+    // R   the hexagon circumradius
+    // B   the border width
+    // col the default color
     //
     //     0    5    8  -
     //    1         9    |
@@ -95,7 +89,7 @@ vec3 hex_display(vec2 uv, vec2 pos, float chr, float R, float B, vec3 col) {
     // K   14015        X   14007
     // L   8511           y 16263
     // M   15549        Z   10227
-    
+
     float r = R * COS30;
     float theta = radians(30.0);
     float n = chr;
