@@ -3,27 +3,33 @@
 #define cos30 cos(radians(30.0))
 #define sqrt3 sqrt(3.0)
 
-#define MODE_HEX 0
-#define MODE_TRIHEX 1
-#define MODE_SNUBHEX 2
-#define MODE_RHOMBITRIHEX 3
-#define MODE_DUALHEX 4
-#define MODE_DUALTRIHEX 5
-#define MODE_DUALSNUBHEX 6
+#define MODE_HEX              0
+#define MODE_TRIHEX           1
+#define MODE_SNUBHEX          2
+#define MODE_RHOMBITRIHEX     3
+#define MODE_DUALHEX          4
+#define MODE_DUALTRIHEX       5
+#define MODE_DUALSNUBHEX      6
 #define MODE_DUALRHOMBITRIHEX 7
 
 #define WIDTH 0.025
 
-#define h 5.0
-#define k 5.0
-#define m MODE_DUALTRIHEX
+#define COLOR_BACKGROUND vec3(031, 120, 180) / 255.0
+#define COLOR_FACE       vec3(178, 223, 138) / 255.0
+#define COLOR_VERTEX     vec3(051, 160, 044) / 255.0
+#define COLOR_TRIANGLE   vec3(166, 206, 227) / 255.0
+#define COLOR_LINE       vec3(166, 206, 227) / 255.0
+
+#define h 1.0
+#define k 2.0
+#define m 5
 
 struct Params {
-    float R;
-    float r;
-    float theta;
-    vec2 hvec;
-    vec2 kvec;
+    float R;     // circumradius
+    float r;     // inradius
+    float theta; // rotation
+    vec2 hvec;   // basis vector
+    vec2 kvec;   // basis vector
 };
 
 Params mode_to_params(int mode) {
@@ -86,7 +92,7 @@ mat2 rotmat2(float theta)
     return mat2(c, s, -s, c);
 }
 
-bool intri(vec2 uv, vec2 v1, vec2 v2, vec2 v3)
+bool in_tri(vec2 uv, vec2 v1, vec2 v2, vec2 v3)
 {
     // https://mathworld.wolfram.com/TriangleInterior.html
     // http://www.sunshine2k.de/coding/java/pointInTriangle/pointInTriangle.html
@@ -99,7 +105,7 @@ bool intri(vec2 uv, vec2 v1, vec2 v2, vec2 v3)
     return s >= 0.0 && t >= 0.0 && (s + t) <= 1.0;
 }
 
-bool inreg(vec2 uv, vec2 c, float n, float R, float theta)
+bool in_reg(vec2 uv, vec2 c, float n, float R, float theta)
 {
     // break-up regular polygon into triangles
     float dt = radians(360.0 / n);
@@ -107,13 +113,13 @@ bool inreg(vec2 uv, vec2 c, float n, float R, float theta)
     {
         vec2 a = R * vec2(cos(dt * i + theta), sin(dt * i + theta)) + c;
         vec2 b = R * vec2(cos(dt * j + theta), sin(dt * j + theta)) + c;
-        if (intri(uv, a, b, c))
+        if (in_tri(uv, a, b, c))
             return true;
     }
     return false;
 }
 
-bool in_hex_floret(vec2 uv, vec2 c, float R) {
+bool in_floret(vec2 uv, vec2 c, float R) {
     // break-up hexagon-inscribed floret into 3 triangles
     float x = (3.0 * sqrt(3.0) * R) / 10.0;
     float X = x / cos(radians(30.0));
@@ -128,7 +134,7 @@ bool in_hex_floret(vec2 uv, vec2 c, float R) {
         vec2 b = (beta - c) * rotmat2(radians(i * 60.0)) + c;
         vec2 g = (gamma - c) * rotmat2(radians(i * 60.0)) + c;
         vec2 d = (delta - c) * rotmat2(radians(i * 60.0)) + c;
-        if (intri(uv, c, a, b) || intri(uv, c, b, g) || intri(uv, c, g, d))
+        if (in_tri(uv, c, a, b) || in_tri(uv, c, b, g) || in_tri(uv, c, g, d))
             return true;
     }
     return false;
@@ -145,7 +151,7 @@ float random (vec2 st)
     return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
 }
 
-const float radius = 0.75;
+const float radius = 0.85;
 const float phi = (1.0 + sqrt(5.0)) / 2.0;
 const float a = 0.5 * radius, b = 1.0 / (2.0 * phi) * radius;
 
@@ -199,37 +205,34 @@ mat3 rotmat3(vec3 angle)
 void mainImage(out vec4 fragColor, in vec2 fragCoord)
 {
     vec2 uv = fragCoord / iResolution.y;
-
     Params p = mode_to_params(m);
-
     vec2 t0 = vec2(0);
     vec2 t1 = mat2(p.hvec, p.kvec) * vec2(h, k);
     vec2 t2 = rotmat2(radians(60.0)) * t1;
-
     uv.x += t2.x < 0.0 ? t2.x : 0.0;
-
-    mat2 b = mat2(p.hvec, p.kvec);
-    vec2 hex = b * round(inverse(b) * uv);
 
     float dw = p.R * WIDTH;
     if (m == MODE_HEX || m == MODE_DUALHEX || m == MODE_DUALRHOMBITRIHEX)
         p.R -= dw;
 
-    bool inhex = inreg(uv, hex, 6.0, p.R, p.theta);
-    if (!inhex)
+    mat2 b = mat2(p.hvec, p.kvec);
+    vec2 hex = b * round(inverse(b) * uv);
+    bool in_hex = in_reg(uv, hex, 6.0, p.R, p.theta);
+    if (!in_hex)
         if (cross2(vec2(p.r, 0.5 * p.R), hex - uv) < 0.)
             hex += (uv.x > hex.x) ? p.kvec : -p.hvec;
         else
             hex += (uv.x > hex.x) ? p.hvec : -p.kvec;
 
-    vec3 rnd = 0.5 + 0.5 * cos(iTime + uv.xyx + vec3(0, 2, 4));
-    vec3 col = vec3(1);
+    vec3 col = COLOR_BACKGROUND;
 
-    if (inhex || inreg(uv, hex, 6.0, p.R, p.theta)) col = vec3(0.5);
-    if (inreg(uv, t0, 6.0, p.R, p.theta) ||
-        inreg(uv, t1, 6.0, p.R, p.theta) ||
-        inreg(uv, t2, 6.0, p.R, p.theta)
-    ) col = mix(col, vec3(0), 0.5);
+    if (in_hex || in_reg(uv, hex, 6.0, p.R, p.theta))
+        col = COLOR_FACE;
+    if (in_reg(uv, t0, 6.0, p.R, p.theta) ||
+        in_reg(uv, t1, 6.0, p.R, p.theta) ||
+        in_reg(uv, t2, 6.0, p.R, p.theta)
+       )
+        col = COLOR_VERTEX;
 
     float R3 = p.R * sqrt3 / 3.0;
     float r3 = p.R * sqrt3 / 6.0;
@@ -237,117 +240,106 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     switch (m) {
         case MODE_SNUBHEX:
         {
-            // if (!inhex) {
-                /*
-                {   // triangles
-                    vec2 uv = uv;
-                    uv.x -= p.R / 2.0;
-                    uv.x += mod(floor(uv.y / a), 2.0) * 0.5 * p.R;
-                    vec2 c = vec2(p.R * round(uv.x / p.R), a * floor(uv.y / a) + r3);
-                    col = inreg(uv, c, 3.0, R3, radians(90.0)) ? col : vec3(0);
-                }
-                */
-                {   // lines
-                    vec2 uv = uv;
-                    uv.x += mod(floor(uv.y / a), 2.0) * 0.5 * p.R;
-                    vec2 c = vec2(p.R * round(uv.x / p.R), a * floor(uv.y / a));
-                    if (distline(uv, c, radians(+60.0)) < dw) col = vec3(0.25);
-                    if (distline(uv, c, radians(-60.0)) < dw) col = vec3(0.25);
-                    if (abs(uv.y - a * round(uv.y / a)) < dw) col = vec3(0.25);
-                }
-            // }
+            if (!in_hex) {
+                vec2 uv = uv;
+                uv.x += mod(floor(uv.y / a), 2.0) * 0.5 * p.R;
+                vec2 c = vec2(p.R * round(uv.x / p.R), a * floor(uv.y / a));
+                if (distline(uv, c, radians(+60.0)) < dw ||
+                    distline(uv, c, radians(-60.0)) < dw ||
+                    abs(uv.y - a * round(uv.y / a)) < dw
+                ) col = COLOR_LINE;
+            }
             break;
         }
         case MODE_RHOMBITRIHEX:
         {
-            if (!inhex) {
-                float R = p.R;
-                float r = p.r;
-                float dx = R + r + r;
-                float dy = R + a + R + a + R;
-                {
-                    vec2 c = vec2(dx * round(uv.x / dx), dy * round(uv.y / dy));
-                    float radius = r + R;
-                    if (
-                        inreg(uv, c + vec2(0, +(R + R3)), 3.0, R3, radians(-90.0))                    ||
-                        inreg(uv, c + vec2(0, -(R + R3)), 3.0, R3, radians(+90.0))                    ||
-                        inreg(uv, c + vec2(+(r + R / 2.0), +(R / 2.0 + r3)), 3.0, R3, radians(+90.0)) ||
-                        inreg(uv, c + vec2(-(r + R / 2.0), +(R / 2.0 + r3)), 3.0, R3, radians(+90.0)) ||
-                        inreg(uv, c + vec2(+(r + R / 2.0), -(R / 2.0 + r3)), 3.0, R3, radians(-90.0)) ||
-                        inreg(uv, c + vec2(-(r + R / 2.0), -(R / 2.0 + r3)), 3.0, R3, radians(-90.0))
-                    ) col = vec3(0.75);
-                }
-            }
+            float R = p.R;
+            float r = p.r;
+            float dx = R + r + r;
+            float dy = R + a + R + a + R;
+            vec2 c = vec2(dx * round(uv.x / dx), dy * round(uv.y / dy));
+            if (in_reg(uv, c + vec2(0, +(R + R3)), 3.0, R3, radians(-90.0))                    ||
+                in_reg(uv, c + vec2(0, -(R + R3)), 3.0, R3, radians(+90.0))                    ||
+                in_reg(uv, c + vec2(+(r + R / 2.0), +(R / 2.0 + r3)), 3.0, R3, radians(+90.0)) ||
+                in_reg(uv, c + vec2(-(r + R / 2.0), +(R / 2.0 + r3)), 3.0, R3, radians(+90.0)) ||
+                in_reg(uv, c + vec2(+(r + R / 2.0), -(R / 2.0 + r3)), 3.0, R3, radians(-90.0)) ||
+                in_reg(uv, c + vec2(-(r + R / 2.0), -(R / 2.0 + r3)), 3.0, R3, radians(-90.0))
+            ) col = COLOR_TRIANGLE;
             break;
         }
         case MODE_DUALTRIHEX:
         {
-            if (
-                inreg(uv, hex, 3.0, p.R, p.theta) ||
-                inreg(uv, hex, 3.0, p.R, p.theta + radians(180.0))
+            if (in_reg(uv, hex, 3.0, p.R, p.theta)                  ||
+                in_reg(uv, hex, 3.0, p.R, p.theta + radians(180.0))
             )
-                col = inhex ? col : vec3(0.75);
+                col = in_hex ? col : COLOR_TRIANGLE;
             else
-                col = vec3(1);
-            if (distline(uv, hex, radians(+60.0)) < dw) col = vec3(1.0);
-            if (distline(uv, hex, radians(-60.0)) < dw) col = vec3(1.0);
-            if (abs(uv.y - hex.y) < dw) col = vec3(1.0);
-            Params q = mode_to_params(MODE_HEX);
-            {
-                vec2 hex = b * round(inverse(b) * uv);
-                if (cross2(vec2(p.r, 0.5 * p.R), hex - uv) < 0.)
-                    hex += (uv.x > hex.x) ? p.kvec : -p.hvec;
-                else
-                    hex += (uv.x > hex.x) ? p.hvec : -p.kvec;
-                if (
-                     inreg(uv, hex, 6.0, p.R / cos30 + dw, radians(30.0)) &&
-                    !inreg(uv, hex, 6.0, p.R / cos30 - dw, radians(30.0))
-                ) col = vec3(0.0);
-            }
+                col = COLOR_BACKGROUND;
+
+            // if (distline(uv, hex, radians(+60.0)) < dw ||
+            //     distline(uv, hex, radians(-60.0)) < dw ||
+            //     abs(uv.y - hex.y) < dw
+            //    )
+            //     col = COLOR_LINE;
+
+            vec2 hex = b * round(inverse(b) * uv);
+            if (cross2(vec2(p.r, 0.5 * p.R), hex - uv) < 0.)
+                hex += (uv.x > hex.x) ? p.kvec : -p.hvec;
+            else
+                hex += (uv.x > hex.x) ? p.hvec : -p.kvec;
+            if ( in_reg(uv, hex, 6.0, p.R / cos30 + dw, radians(30.0)) &&
+                !in_reg(uv, hex, 6.0, p.R / cos30 - dw, radians(30.0))
+               )
+                col = COLOR_LINE;
+
             break;
         }
         case MODE_DUALSNUBHEX:
         {
-            if (in_hex_floret(uv, t0, p.R + R3) ||
-                in_hex_floret(uv, t1, p.R + R3) ||
-                in_hex_floret(uv, t2, p.R + R3)
-            ) col = vec3(0.5);
+            if (in_floret(uv, t0, p.R + R3) ||
+                in_floret(uv, t1, p.R + R3) ||
+                in_floret(uv, t2, p.R + R3)
+               )
+                col = COLOR_VERTEX;
             else {
                 bool in_hex = false;
                 mat2 b = mat2(p.hvec * 2.0, p.kvec * 2.0);
                 {
                     vec2 hex = b * round(inverse(b) * uv);
-                    in_hex = in_hex_floret(uv, hex, p.R + R3);
+                    in_hex = in_floret(uv, hex, p.R + R3);
                 }
                 if (!in_hex) {
                     vec2 uv = uv - p.hvec;
                     vec2 hex = b * round(inverse(b) * uv);
-                    in_hex = in_hex_floret(uv, hex, p.R + R3);
+                    in_hex = in_floret(uv, hex, p.R + R3);
                 }
                 if (!in_hex) {
                     vec2 uv = uv + p.kvec;
                     vec2 hex = b * round(inverse(b) * uv);
-                    in_hex = in_hex_floret(uv, hex, p.R + R3);
+                    in_hex = in_floret(uv, hex, p.R + R3);
                 }
                 if (!in_hex) {
                     vec2 uv = uv + p.hvec + p.kvec;
                     vec2 hex = b * round(inverse(b) * uv);
-                    in_hex = in_hex_floret(uv, hex, p.R + R3);
+                    in_hex = in_floret(uv, hex, p.R + R3);
                 }
-                if (in_hex) col = vec3(0.75);
+                if (in_hex) col = COLOR_FACE;
             }
             break;
         }
         case MODE_DUALRHOMBITRIHEX:
         {
-            if (distline(uv, hex, radians(+60.0)) < dw) col = vec3(1.0);
-            if (distline(uv, hex, radians(-60.0)) < dw) col = vec3(1.0);
-            if (abs(uv.y - hex.y) < dw) col = vec3(1.0);
+            if (distline(uv, hex, radians(+60.0)) <= dw ||
+                distline(uv, hex, radians(-60.0)) <= dw ||
+                abs(uv.y - hex.y) < dw
+               )
+                col = COLOR_BACKGROUND;
             break;
         }
     }
 
-    if (intri(uv, vec2(0), t1, t2)) col = mix(rnd, col, 0.75);
+    // vec3 rnd = 0.5 + 0.5 * cos(iTime + uv.xyx + vec3(0, 2, 4));
+    // if (in_tri(uv, vec2(0), t1, t2)) col = mix(rnd, col, 0.75);
 
     fragColor = vec4(col, 1.0);
 }
@@ -398,17 +390,17 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         vec3 q1 = P * v[int(f[i].x)];
         vec3 q2 = P * v[int(f[i].y)];
         vec3 q3 = P * v[int(f[i].z)];
-        if (intri(uv, q1.xy, q2.xy, q3.xy))
+        if (in_tri(uv, q1.xy, q2.xy, q3.xy))
         {
             mat3 A = mat3(
                 q1.x, q1.y, 1,
                 q2.x, q2.y, 1,
                 q3.x, q3.y, 1
             );
+            z[n] = ((q1 + q2 + q3) / 3.0).z;
             vec3 iv = X * inverse(A) * vec3(uv.x, uv.y, 1);
             iv.x -= t2.x < 0.0 ? t2.x : 0.0;
-            c[n] = texture(iChannel0, iv.xy).xyz;
-            z[n] = ((q1 + q2 + q3) / 3.0).z;
+            c[n] = mix(texture(iChannel0, iv.xy).xyz, vec3(0), -z[n]);
             n += 1;
         }
     }
@@ -428,7 +420,6 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         i = i + 1;
     }
 
-    for (int i = 0; i < n; i++) col = mix(col, c[i], 0.5);
-
+    for (int i = 0; i < n; i++) col = mix(col, c[i], 0.75);
     fragColor = vec4(col, 1);
 }

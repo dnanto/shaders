@@ -12,15 +12,15 @@
 
 #define WIDTH 0.025
 
-#define COLOR_BACKGROUND vec3(1.00)
-#define COLOR_HEXAGON    vec3(0.50)
-#define COLOR_VERTEX     vec3(0.25)
-#define COLOR_TRIANGLE   vec3(0.75)
-#define COLOR_LINE       vec3(0.00)
+#define COLOR_BACKGROUND vec3(130, 145, 195) / 255.0
+#define COLOR_FACE       vec3(145, 190,  95) / 255.0
+#define COLOR_VERTEX     vec3(110, 166, 156) / 255.0
+#define COLOR_TRIANGLE   vec3(175, 215, 210) / 255.0
+#define COLOR_LINE       vec3(175, 215, 210) / 255.0
 
 #define h 5.0
 #define k 2.0
-#define m MODE_DUALTRIHEX
+#define m MODE_SNUBHEX
 
 struct Params {
     float R;     // circumradius
@@ -90,6 +90,17 @@ mat2 rotmat2(float theta)
     return mat2(c, s, -s, c);
 }
 
+float distline(vec2 uv, vec2 p, float theta) {
+    // https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
+    return abs(cos(theta) * (p.y - uv.y) - sin(theta) * (p.x - uv.x));
+}
+
+float random (vec2 st)
+{
+    // https://thebookofshaders.com/10/
+    return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
+}
+
 bool in_tri(vec2 uv, vec2 v1, vec2 v2, vec2 v3)
 {
     // https://mathworld.wolfram.com/TriangleInterior.html
@@ -138,17 +149,6 @@ bool in_floret(vec2 uv, vec2 c, float R) {
     return false;
 }
 
-float distline(vec2 uv, vec2 p, float theta) {
-    // https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
-    return abs(cos(theta) * (p.y - uv.y) - sin(theta) * (p.x - uv.x));
-}
-
-float random (vec2 st)
-{
-    // https://thebookofshaders.com/10/
-    return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
-}
-
 void mainImage(out vec4 fragColor, in vec2 fragCoord)
 {
     vec2 uv = fragCoord / iResolution.y;
@@ -173,11 +173,13 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
 
     vec3 col = COLOR_BACKGROUND;
 
-    if (in_hex || in_reg(uv, hex, 6.0, p.R, p.theta)) col = COLOR_HEXAGON;
+    if (in_hex || in_reg(uv, hex, 6.0, p.R, p.theta))
+        col = COLOR_FACE;
     if (in_reg(uv, t0, 6.0, p.R, p.theta) ||
         in_reg(uv, t1, 6.0, p.R, p.theta) ||
         in_reg(uv, t2, 6.0, p.R, p.theta)
-    ) col = COLOR_VERTEX;
+       )
+        col = COLOR_VERTEX;
 
     float R3 = p.R * sqrt3 / 3.0;
     float r3 = p.R * sqrt3 / 6.0;
@@ -185,13 +187,15 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     switch (m) {
         case MODE_SNUBHEX:
         {
-            vec2 uv = uv;
-            uv.x += mod(floor(uv.y / a), 2.0) * 0.5 * p.R;
-            vec2 c = vec2(p.R * round(uv.x / p.R), a * floor(uv.y / a));
-            if (distline(uv, c, radians(+60.0)) < dw ||
-                distline(uv, c, radians(-60.0)) < dw ||
-                abs(uv.y - a * round(uv.y / a)) < dw
-            ) col = COLOR_LINE;
+            if (!in_hex) {
+                vec2 uv = uv;
+                uv.x += mod(floor(uv.y / a), 2.0) * 0.5 * p.R;
+                vec2 c = vec2(p.R * round(uv.x / p.R), a * floor(uv.y / a));
+                if (distline(uv, c, radians(+60.0)) < dw ||
+                    distline(uv, c, radians(-60.0)) < dw ||
+                    abs(uv.y - a * round(uv.y / a)) < dw
+                ) col = COLOR_LINE;
+            }
             break;
         }
         case MODE_RHOMBITRIHEX:
@@ -219,10 +223,11 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
             else
                 col = COLOR_BACKGROUND;
 
-            if (distline(uv, hex, radians(+60.0)) < dw ||
-                distline(uv, hex, radians(-60.0)) < dw ||
-                abs(uv.y - hex.y) < dw
-            ) col = COLOR_LINE;
+            // if (distline(uv, hex, radians(+60.0)) < dw ||
+            //     distline(uv, hex, radians(-60.0)) < dw ||
+            //     abs(uv.y - hex.y) < dw
+            //    )
+            //     col = COLOR_LINE;
 
             vec2 hex = b * round(inverse(b) * uv);
             if (cross2(vec2(p.r, 0.5 * p.R), hex - uv) < 0.)
@@ -231,7 +236,8 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
                 hex += (uv.x > hex.x) ? p.hvec : -p.kvec;
             if ( in_reg(uv, hex, 6.0, p.R / cos30 + dw, radians(30.0)) &&
                 !in_reg(uv, hex, 6.0, p.R / cos30 - dw, radians(30.0))
-            ) col = COLOR_LINE;
+               )
+                col = COLOR_LINE;
 
             break;
         }
@@ -240,9 +246,8 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
             if (in_floret(uv, t0, p.R + R3) ||
                 in_floret(uv, t1, p.R + R3) ||
                 in_floret(uv, t2, p.R + R3)
-            ) {
+               )
                 col = COLOR_VERTEX;
-            }
             else {
                 bool in_hex = false;
                 mat2 b = mat2(p.hvec * 2.0, p.kvec * 2.0);
@@ -265,7 +270,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
                     vec2 hex = b * round(inverse(b) * uv);
                     in_hex = in_floret(uv, hex, p.R + R3);
                 }
-                if (in_hex) col = COLOR_HEXAGON;
+                if (in_hex) col = COLOR_FACE;
             }
             break;
         }
@@ -274,7 +279,8 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
             if (distline(uv, hex, radians(+60.0)) <= dw ||
                 distline(uv, hex, radians(-60.0)) <= dw ||
                 abs(uv.y - hex.y) < dw
-            ) col = COLOR_LINE;
+               )
+                col = COLOR_BACKGROUND;
             break;
         }
     }
