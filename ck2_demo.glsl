@@ -95,7 +95,7 @@ float distline(vec2 uv, vec2 p, float theta) {
     return abs(cos(theta) * (p.y - uv.y) - sin(theta) * (p.x - uv.x));
 }
 
-float random (vec2 st)
+float random(vec2 st)
 {
     // https://thebookofshaders.com/10/
     return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
