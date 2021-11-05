@@ -4,10 +4,12 @@
 #define IPOS 0
 /////// buffer data row index: velocity
 #define IVEL 1
+/////// buffer data channel row index: properties (mass, radius, & collision)
+#define IPRP 2
 /////// buffer data row index: end of data
-#define IEND 2
+#define IEND 3
 /////// number of particles
-#define N 1280
+#define N 1280 / 16
 /////// particle mass
 #define M 0.005
 /////// gravitational constant
@@ -24,6 +26,12 @@
 #define RADI 0.20
 /////// particle radius
 #define RADP 0.005
+/////// maximum particle mass
+#define MPMASS 100.0
+/////// maximum particle radius
+#define MPRADI 0.015
+/////// maximum particle initial velocity
+#define MPVELO 0.050
 
 float random(vec2 seed) {
     // https://thebookofshaders.com/10/
@@ -49,6 +57,10 @@ vec3 force_boundary(vec3 pos) {
     return r >= RADB ? -2.0 * K * (r - RADB) * (pos - vec3(0.5)) : vec3(0);
 }
 
+vec3 forces(ivec2 iv, vec3 pos, sampler2D iChannel) {
+    return force_gravity(iv, pos, iChannel) + force_boundary(pos);
+}
+
 // Buffer A
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord)
@@ -60,26 +72,66 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     if (iv.x < N && iv.y < IEND) {
         if (iFrame == 0) {
             // initialize
-            if (iv.y == IPOS) {
+            /****/ if (iv.y == IPOS) {
                 // https://math.stackexchange.com/a/1585996
                 vec3 pos = 1.0 - 2.0 * random3(uv + iTime);
                 pos = normalize(pos) * RADI + vec3(0.5);
                 fcol = vec4(pos, 0);
+            } else if (iv.y == IVEL) {
+                vec3 vel = random3(uv.yx + iDate.xy + iTime).xyz;
+                vel.x *= random(uv.xy + iDate.xy + iTime) < 0.5 ? -1.0 : +1.0;
+                vel.y *= random(uv.yx + iDate.xy + iTime) < 0.5 ? -1.0 : +1.0;
+                vel.z *= random(uv.yy + iDate.xy + iTime) < 0.5 ? -1.0 : +1.0;
+                fcol.xyz = vel * MPVELO;
+            } else if (iv.y == IPRP) {
+                fcol.x = MPMASS * random(uv.xy + iDate.xy + iTime); // mass
+                fcol.y = fcol.x / MPMASS * MPRADI;                  // radius
             }
         } else {
-            // verlet integration
-            // fpos = pos + vel * dt + 0.5 * force(pos) * dt ** 2
-            // fvel = vel + 0.5 * (f + force(fpos)) * dt
-            vec3 pos = texelFetch(iChannel0, ivec2(iv.x, IPOS), 0).xyz;
-            vec3 vel = texelFetch(iChannel0, ivec2(iv.x, IVEL), 0).xyz;
-            vec3 ff1 = force_gravity(iv, pos, iChannel0) + force_boundary(pos);
+            // collisions
+            bool cll = false;
+            vec3 pos1 = texelFetch(iChannel0, ivec2(iv.x, IPOS), 0).xyz;
+            vec3 vel1 = texelFetch(iChannel0, ivec2(iv.x, IVEL), 0).xyz;
+            vec4 prop1 = texelFetch(iChannel0, ivec2(iv.x, IPRP), 0);
+            float mass1 = prop1.x;
+            float radius1 = prop1.y;
+            for (int j = 0; j < N; j++) {
+                if (iv.x != j) {
+                    vec3 pos2 = texelFetch(iChannel0, ivec2(j, IPOS), 0).xyz;
+                    vec3 vel2 = texelFetch(iChannel0, ivec2(j, IVEL), 0).xyz;
+                    vec4 prop2 = texelFetch(iChannel0, ivec2(j, IPRP), 0);
+                    float mass2 = prop2.x;
+                    float radius2 = prop2.y;
+                    float d = distance(pos1, pos2);
+                    if (d < radius1 + radius2) {
+                        vec3 n = normalize(pos1 - pos2);
+                        pos1 += n * (radius1 + radius2 - d);
+                        if (dot(pos2 - pos1, vel1) > 0.0) {
+                            // https://en.wikipedia.org/wiki/Elastic_collision#Two-dimensional_collision_with_two_moving_objects
+                            vel1 -= (2.0 * mass2 / (mass1 + mass2)) * (dot(vel1 - vel2, pos1 - pos2) / length(pos1 - pos2)) * (pos1 - pos2);
+                            // https://en.wikipedia.org/wiki/Specular_reflection#Vector_formulation
+                            vel1 -= 2.0 * dot(vel1, n) * n;
+                        }
+                        cll = true;
+                        break;
+                    }
+                }
+            }
+            // potential fields
+            // https://en.wikipedia.org/wiki/Verlet_integration
+            // fpos = pos + vel * dt + 0.5 * forces(pos) * dt ** 2
+            // fvel = vel + 0.5 * (f + forces(fpos)) * dt
+            vec3 pos = pos1;
+            vec3 vel = vel1;
+            vec3 ff1 = forces(iv, pos, iChannel0);
             pos += vel * iTimeDelta + 0.5 * ff1 * iTimeDelta * iTimeDelta;
             /****/ if (iv.y == IPOS) {
                 fcol = vec4(pos, 0);
             } else if (iv.y == IVEL) {
-                vec3 ff2 = force_gravity(iv, pos, iChannel0) + force_boundary(pos);
-                vel += 0.5 * (ff1 + ff2) * iTimeDelta;
+                vel += 0.5 * (ff1 + forces(iv, pos, iChannel0)) * iTimeDelta;
                 fcol = vec4(vel, 0);
+            } else if (iv.y == IPRP) {
+                fcol = vec4(prop1.x, prop1.y, int(cll), 0);
             }
         }
     }
@@ -91,13 +143,18 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord)
 {
-    vec2 uv = fragCoord / iResolution.xy;
+    vec2 uv = fragCoord / iResolution.y;
+    uv.x -= (iResolution.x / iResolution.y - 1.0) / 2.0;
+
+    iResolution.x / iResolution.y / 2.0;
 
     vec3 col = vec3(0);
-    for (int i = 0; i < N; i++) {
-        vec4 pos = texelFetch(iChannel0, ivec2(i, IPOS), 0);
-        if (distance(uv, pos.xy) < RADP) {
+    for (int j = 0; j < N; j++) {
+        vec4 pos = texelFetch(iChannel0, ivec2(j, IPOS), 0);
+        vec4 prop = texelFetch(iChannel0, ivec2(j, IPRP), 0);
+        if (distance(uv, pos.xy) < prop.y) {
             col = 1.0 - pos.zzz;
+            col = prop.z == 1.0 ? mix(col, vec3(1, 0, 0), 1.0) : col;
         }
     }
 

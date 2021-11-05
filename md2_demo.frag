@@ -7,7 +7,7 @@
 /////// buffer data channel row index: end of data
 #define IEND 2
 /////// number of particles
-#define N 1280
+#define N 1280 / 4
 /////// maximum particle mass
 #define MPMASS 1.0
 /////// maximum particle radius
@@ -66,14 +66,30 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
                     if (d < radius1 + radius2) {
                         vec2 n = normalize(pos1 - pos2);
                         pos1 += n * (radius1 + radius2 - d);
-                        // https://en.wikipedia.org/wiki/Elastic_collision#Two-dimensional_collision_with_two_moving_objects
-                        vel1 -= (2.0 * mass2 / (mass1 + mass2)) * (dot(vel1 - vel2, pos1 - pos2) / length(pos1 - pos2)) * (pos1 - pos2);
-                        // https://en.wikipedia.org/wiki/Specular_reflection#Vector_formulation
-                        vel1 -= 2.0 * dot(vel1, n) * n;
+                        if (dot(pos2 - pos1, vel1) > 0.0) {
+                            // https://en.wikipedia.org/wiki/Elastic_collision#Two-dimensional_collision_with_two_moving_objects
+                            vel1 -= (2.0 * mass2 / (mass1 + mass2)) * (dot(vel1 - vel2, pos1 - pos2) / length(pos1 - pos2)) * (pos1 - pos2);
+                            // https://en.wikipedia.org/wiki/Specular_reflection#Vector_formulation
+                            vel1 -= 2.0 * dot(vel1, n) * n;
+                        }
                         cll = true;
                         break;
                     }
                 }
+            }
+
+            /****/ if (pos1.x - radius1 < 0.0) {
+                pos1.x = radius1;
+                vel1.x *= -1.0;
+            } else if (pos1.x + radius1 > 1.0) {
+                pos1.x = 1.0 - radius1;
+                vel1.x *= -1.0;
+            } else if (pos1.y - radius1 < 0.0) {
+                pos1.y = radius1;
+                vel1.y *= -1.0;
+            } else if (pos1.y + radius1 > 1.0) {
+                pos1.y = 1.0 - radius1;
+                vel1.y *= -1.0;
             }
 
             pos1 += vel1 * iTimeDelta;
@@ -93,7 +109,8 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord)
 {
-    vec2 uv = fragCoord / iResolution.xy;
+    vec2 uv = fragCoord / iResolution.y;
+    uv.x -= (iResolution.x / iResolution.y - 1.0) / 2.0;
 
     vec3 col = vec3(0);
     for (int j = 0; j < N; j++) {
