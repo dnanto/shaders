@@ -121,22 +121,37 @@
     00000.0, 00000.0, 00000.0, 00000.0, 00000.0,                                                       \
     16313.0, 11263.0, 15549.0, 14777.0, 13287.0, 03839.0, 08511.0, 16127.0, 13287.0, 16063.0, 00000.0, \
     12283.0, 16255.0, 12283.0, 15873.0, 00000.0,                                                       \
-    14777.0, 14521.0, 08511.0, 14336.0, 14521.0, 11263.0, 00000.0,                                     \
-    14777.0, 16063.0, 00000.0, 16313.0, 11263.0, 11263.0, 18617.0, 11777.0, 11777.0                    \
+    12289.0, 13287.0, 00000.0,                                                                         \
+    14777.0, 14521.0, 08511.0, 14336.0, 14521.0, 11263.0,                                     \
+    08192.0, 08192.0, 08192.0                                                                          \
 )                                                                                                      \
 
 
 // scenes
-//// scroll, lattice cycle, ico cycle, greets, deer, rand, automata, credits
-#define checkpoints int[] (60 * 4, 60 * 8, 60 * 12, 60 * 32, 60 * 64, 60 * 128, 60 * 256)
+//// intro
+//// lattice cycle
+//// icosahedron cycle
+//// deer
+//// rand initialization
+//// automata
+//// outro
+#define checkpoints int[] (             \
+    60 * (11),                          \
+    60 * (11 + 18),                     \
+    60 * (11 + 18 + 18),                \
+    60 * (11 + 18 + 18 + 2),            \
+    60 * (11 + 18 + 18 + 2 + 2),        \
+    60 * (11 + 18 + 18 + 2 + 2 + 2),    \
+    60 * (11 + 18 + 18 + 2 + 2 + 2 + 2) \
+)                                       \
 
 
 int frame_to_mode(int frame) {
     if (frame < checkpoints[0]) {
     } else if (frame < checkpoints[1]) {
-        return int(mod(round(float(frame - checkpoints[1]) / 14.0), 7.0));
+        return int(mod(round(float(frame - checkpoints[1]) / 120.0), 8.0));
     } else if (frame < checkpoints[2]) {
-        return int(mod(round(float(frame - checkpoints[2]) / 14.0), 7.0));
+        return int(mod(round(float(frame - checkpoints[2]) / 120.0), 8.0));
     } else if (frame < checkpoints[3]) {
         return 0;
     }
@@ -146,9 +161,11 @@ int frame_to_mode(int frame) {
 int frame_to_h(int frame) {
     if (frame < checkpoints[0]) {
     } else if (frame < checkpoints[1]) {
-        return int(mod(round(float(frame - checkpoints[1]) / 2.0), 10.0));
+        float n = 30.0;
+        return int(1.0 + round(n / 2.0 * sin(float(frame) / 30.0)) + floor(n / 2.0));
     } else if (frame < checkpoints[2]) {
-        return int(mod(round(float(frame - checkpoints[2]) / 2.0), 10.0));
+        float n = 8.0;
+        return int(1.0 + round(n / 2.0 * sin(float(frame) / 7.5)) + floor(n / 2.0));
     } else if (frame < checkpoints[3]) {
         return 16;
     } else if (frame < checkpoints[4]) {
@@ -164,7 +181,8 @@ int frame_to_k(int frame) {
     } else if (frame < checkpoints[1]) {
         return 0;
     } else if (frame < checkpoints[2]) {
-        return 0;
+        float n = 8.0;
+        return int(1.0 + round(n / 2.0 * sin(float(frame) / 10.0)) + floor(n / 2.0));
     } else if (frame < checkpoints[3]) {
         return 16;
     } else if (frame < checkpoints[4]) {
@@ -458,10 +476,15 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
             vec2 hex = uv_to_hex(uv, p);
             int ir = int(round(hex.y / (1.5 * p.R)));
             int ic = int(round((hex.x - mod(float(ir), 2.0) * p.r) / (2.0 * p.r)));
-            if (0 <= ir && 0 <= ic && ir < img_m && ic < img_n)
-                if (img[15 * ir + ic] == 1)
-                    if (in_reg(uv, hex, 6.0, p.R, rad30))
-                        col_face = 0.5 + 0.5 * cos(iTime + uv.xyx + vec3(0, 2, 4));
+            if (0 <= ic && ir < img_m && ic < img_n) {
+                if (img[15 * ir + ic] == 1) {
+                    if (in_reg(uv, hex, 6.0, p.R, rad30)) {
+                        col_face = cos(iTime + uv.xyx );
+                        col_face.x = 0.0;
+                    }
+                }
+            }
+
         } else if (iFrame < checkpoints[4]) {
             // set random initial state
             col_face = vec3(fract(random(iTime + hex * iTime)) <= 0.45 ? COLOR_ON : COLOR_FACE);
