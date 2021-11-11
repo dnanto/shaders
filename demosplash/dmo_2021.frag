@@ -122,28 +122,20 @@
     16313.0, 11263.0, 15549.0, 14777.0, 13287.0, 03839.0, 08511.0, 16127.0, 13287.0, 16063.0, 00000.0, \
     12283.0, 16255.0, 12283.0, 15873.0, 00000.0,                                                       \
     12289.0, 13287.0, 00000.0,                                                                         \
-    14777.0, 14521.0, 08511.0, 14336.0, 14521.0, 11263.0,                                     \
+    14777.0, 14521.0, 08511.0, 14336.0, 14521.0, 11263.0,                                              \
     08192.0, 08192.0, 08192.0                                                                          \
 )                                                                                                      \
 
-
-// scenes
-//// intro
-//// lattice cycle
-//// icosahedron cycle
-//// deer
-//// rand initialization
-//// automata
-//// outro
-#define checkpoints int[] (             \
-    60 * (11),                          \
-    60 * (11 + 18),                     \
-    60 * (11 + 18 + 18),                \
-    60 * (11 + 18 + 18 + 2),            \
-    60 * (11 + 18 + 18 + 2 + 2),        \
-    60 * (11 + 18 + 18 + 2 + 2 + 2),    \
-    60 * (11 + 18 + 18 + 2 + 2 + 2 + 2) \
-)                                       \
+// scene frame thresholds
+#define checkpoints int[] (                                                 \
+    60 * (11),                              /* intro */                     \
+    60 * (11 + 18),                         /* plane lattice cycle */       \
+    60 * (11 + 18 + 18),                    /* icosahedral lattice cycle */ \
+    60 * (11 + 18 + 18 + 18),               /* deer */                      \
+    60 * (11 + 18 + 18 + 18 + 18),          /* random initialization */     \
+    60 * (11 + 18 + 18 + 18 + 18 + 18),     /* cellular automata */         \
+    60 * (11 + 18 + 18 + 18 + 18 + 18 + 18) /* outro */                     \
+)                                                                           \
 
 
 int frame_to_mode(int frame) {
@@ -162,10 +154,10 @@ int frame_to_h(int frame) {
     if (frame < checkpoints[0]) {
     } else if (frame < checkpoints[1]) {
         float n = 30.0;
-        return int(1.0 + round(n / 2.0 * sin(float(frame) / 30.0)) + floor(n / 2.0));
+        return int(1.0 + round(n / 2.0 * sin(float(frame - checkpoints[1]) / n)) + floor(n / 2.0));
     } else if (frame < checkpoints[2]) {
         float n = 8.0;
-        return int(1.0 + round(n / 2.0 * sin(float(frame) / 7.5)) + floor(n / 2.0));
+        return int(1.0 + round(n / 2.0 * sin(float(frame - checkpoints[2]) / n)) + floor(n / 2.0));
     } else if (frame < checkpoints[3]) {
         return 16;
     } else if (frame < checkpoints[4]) {
@@ -182,7 +174,7 @@ int frame_to_k(int frame) {
         return 0;
     } else if (frame < checkpoints[2]) {
         float n = 8.0;
-        return int(1.0 + round(n / 2.0 * sin(float(frame) / 10.0)) + floor(n / 2.0));
+        return int(round(n / 2.0 * sin(float(frame - checkpoints[2]) / 10.0)) + floor(n / 2.0));
     } else if (frame < checkpoints[3]) {
         return 16;
     } else if (frame < checkpoints[4]) {
@@ -442,6 +434,9 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     vec2 t2 = rotmat2(rad60) * t1;
     uv.x += t2.x < 0.0 ? t2.x : 0.0;
 
+    if (iFrame < checkpoints[1])
+        uv.x -= (iResolution.x / iResolution.y - t1.x) / 2.0;
+
     // set border
     float dw = p.R * WIDTH;
     if (m == MODE_HEX || m == MODE_DUALHEX || m == MODE_DUALRHOMBITRIHEX)
@@ -631,8 +626,9 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
         }
     }
 
-    // vec3 rnd = 0.5 + 0.5 * cos(iTime + uv.xyx + vec3(0, 2, 4));
-    // if (in_tri(uv, vec2(0), t1, t2)) col = mix(rnd, col, 0.75);
+    vec3 rnd = vec3(cos(iTime));
+    rnd.x = 0.0;
+    if (in_tri(uv, vec2(0), t1, t2)) col = mix(rnd, col, 0.85);
 
     fragColor = vec4(col, 1.0);
 }
