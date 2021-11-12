@@ -37,12 +37,58 @@
 // #define k 16.0
 // #define m MODE_HEX
 
-// icosahedron parameters
+// polyhedra
+//// tetrahedron
+////// radius
+#define TET_R 0.25
+////// vertexes
+#define TET_V vec4[] (               \
+    vec4(+TET_R, +TET_R, +TET_R, 1), \
+    vec4(-TET_R, +TET_R, -TET_R, 1), \
+    vec4(+TET_R, -TET_R, -TET_R, 1), \
+    vec4(-TET_R, +TET_R, -TET_R, 1), \
+    vec4(-TET_R, -TET_R, +TET_R, 1), \
+    vec4(+TET_R, -TET_R, -TET_R, 1)  \
+)                                    \
+////// faces
+#define TET_F vec3[] ( \
+    vec3(0, 1, 2),     \
+    vec3(1, 4, 2),     \
+    vec3(0, 2, 4),     \
+    vec3(0, 4, 1)      \
+)                      \
+//// octahedron
+////// radius
+#define OCT_RADIUS 0.85
+#define OCT_A      1.0 / (2.0 * sqrt(2.0)) * OCT_RADIUS
+#define OCT_B      0.5 * OCT_RADIUS
+////// vertexes
+#define OCT_V vec4[] (          \
+    vec4(-OCT_A, 0, +OCT_A, 1), \
+    vec4(-OCT_A, 0, -OCT_A, 1), \
+    vec4(0, +OCT_B, 0, 1),      \
+    vec4(+OCT_A, 0, -OCT_A, 1), \
+    vec4(+OCT_A, 0, +OCT_A, 1), \
+    vec4(0, -OCT_B, 0, 1)       \
+)                               \
+////// faces
+#define OCT_F vec3[] ( \
+    vec3(0, 1, 2),     \
+    vec3(1, 3, 2),     \
+    vec3(3, 4, 2),     \
+    vec3(4, 0, 2),     \
+    vec3(3, 1, 5),     \
+    vec3(1, 0, 5),     \
+    vec3(4, 3, 5),     \
+    vec3(0, 4, 5)      \
+)                      \
+//// icosahedron
+////// radius
 #define ICO_RADIUS 0.85
 #define ICO_A      0.5 * ICO_RADIUS
 #define ICO_B      1.0 / (2.0 * phi) * ICO_RADIUS
-//// vertexes
-#define v vec4[] (            \
+////// vertexes
+#define ICO_V vec4[] (        \
   vec4(0, +ICO_B, -ICO_A, 1), \
   vec4(+ICO_B, +ICO_A, 0, 1), \
   vec4(-ICO_B, +ICO_A, 0, 1), \
@@ -56,29 +102,29 @@
   vec4(+ICO_B, -ICO_A, 0, 1), \
   vec4(-ICO_B, -ICO_A, 0, 1)  \
 )                             \
-//// faces
-#define f vec3[] (  \
-  vec3( 0,  1,  2), \
-  vec3( 3,  2,  1), \
-  vec3( 3,  4,  5), \
-  vec3( 3,  8,  4), \
-  vec3( 0,  6,  7), \
-  vec3( 0,  9,  6), \
-  vec3( 4, 10, 11), \
-  vec3( 6, 11, 10), \
-  vec3( 2,  5,  9), \
-  vec3(11,  9,  5), \
-  vec3( 1,  7,  8), \
-  vec3(10,  8,  7), \
-  vec3( 3,  5,  2), \
-  vec3( 3,  1,  8), \
-  vec3( 0,  2,  9), \
-  vec3( 0,  7,  1), \
-  vec3( 6,  9, 11), \
-  vec3( 6, 10,  7), \
-  vec3( 4, 11,  5), \
-  vec3( 4,  8, 10)  \
-)                   \
+////// faces
+#define ICO_F vec3[] (  \
+  vec3( 0,  1,  2),     \
+  vec3( 3,  2,  1),     \
+  vec3( 3,  4,  5),     \
+  vec3( 3,  8,  4),     \
+  vec3( 0,  6,  7),     \
+  vec3( 0,  9,  6),     \
+  vec3( 4, 10, 11),     \
+  vec3( 6, 11, 10),     \
+  vec3( 2,  5,  9),     \
+  vec3(11,  9,  5),     \
+  vec3( 1,  7,  8),     \
+  vec3(10,  8,  7),     \
+  vec3( 3,  5,  2),     \
+  vec3( 3,  1,  8),     \
+  vec3( 0,  2,  9),     \
+  vec3( 0,  7,  1),     \
+  vec3( 6,  9, 11),     \
+  vec3( 6, 10,  7),     \
+  vec3( 4, 11,  5),     \
+  vec3( 4,  8, 10)      \
+)                       \
 
 // image
 #define img_m 22
@@ -726,7 +772,9 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         int n = 0;    // n-th color
         vec3[20] c;   // color value
         float[20] z;  // color depth
-        for (int i = 0; i < 20; i++)
+        vec4[] v = TET_V;
+        vec3[] f = TET_F;
+        for (int i = 0; i < f.length(); i++)
         {
             // icosahedron face
             vec3 q1 = P * v[int(f[i].x)];
