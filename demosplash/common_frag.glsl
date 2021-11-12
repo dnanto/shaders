@@ -185,68 +185,43 @@
     60 * (2 + 6 + 6 + 6 + 6 + 6 + 6) /* outro */                     \
 )                                                                           \
 
+struct Scene {
+    int m; // lattice mode
+    int h; // Caspar-Klug h parameter
+    int k; // Caspar-Klug k parameter
+    int p; // polyhedron
+};
 
-int frame_to_mode(int frame) {
-    if (frame < checkpoints[0]) {
+Scene frame_to_scene(int frame) {
+    int s = frame, m = MODE_HEX, h = 0, k = 0, p = 0;
+    /****/ if (frame < checkpoints[0]) {
     } else if (frame < checkpoints[1]) {
-        return int(mod(round(float(frame - checkpoints[1]) / 120.0), 8.0));
+        s -= checkpoints[1];
+        m = int(mod(round(float(s) / 120.0), 8.0));
+        h = int(1.0 + round(30.0 / 2.0 * sin(float(s) / 30.0)) + floor(30.0 / 2.0));
     } else if (frame < checkpoints[2]) {
-        return int(mod(round(float(frame - checkpoints[2]) / 120.0), 8.0));
+        s -= checkpoints[2];
+        m = int(mod(round(float(s) / 120.0), 8.0));
+        h = int(1.0 + round(8.0 / 2.0 * sin(float(s) / 8.0)) + floor(8.0 / 2.0));
+        k = int(round(8.0 / 2.0 * sin(float(s) / 10.0)) + floor(8.0 / 2.0));
     } else if (frame < checkpoints[3]) {
-        return 0;
-    }
-    return 0;
-}
-
-int frame_to_h(int frame) {
-    if (frame < checkpoints[0]) {
-    } else if (frame < checkpoints[1]) {
-        float n = 30.0;
-        return int(1.0 + round(n / 2.0 * sin(float(frame - checkpoints[1]) / n)) + floor(n / 2.0));
-    } else if (frame < checkpoints[2]) {
-        float n = 8.0;
-        return int(1.0 + round(n / 2.0 * sin(float(frame - checkpoints[2]) / n)) + floor(n / 2.0));
-    } else if (frame < checkpoints[3]) {
-        return 16;
+        s -= checkpoints[3];
+        h = 16;
+        k = 16;
+        p = int(mod(round(float(s) / 240.0), 3.0));
     } else if (frame < checkpoints[4]) {
-        return 16;
+        s -= checkpoints[4];
+        h = 16;
+        k = 16;
+        p = int(mod(round(float(s) / 240.0), 3.0));
     } else if (frame < checkpoints[5]) {
-        return 16;
+        s -= checkpoints[5];
+        h = 16;
+    } else if (frame < checkpoints[6]) {
+        s -= checkpoints[6];
+        h = 16;
     }
-    return 1;
-}
-
-int frame_to_k(int frame) {
-    if (frame < checkpoints[0]) {
-    } else if (frame < checkpoints[1]) {
-        return 0;
-    } else if (frame < checkpoints[2]) {
-        float n = 8.0;
-        return int(round(n / 2.0 * sin(float(frame - checkpoints[2]) / 10.0)) + floor(n / 2.0));
-    } else if (frame < checkpoints[3]) {
-        return 16;
-    } else if (frame < checkpoints[4]) {
-        return 16;
-    } else if (frame < checkpoints[5]) {
-        return 16;
-    }
-    return 0;
-}
-
-int frame_to_polyhedra(int frame) {
-    if (frame < checkpoints[0]) {
-        return ICO;
-    } else if (frame < checkpoints[1]) {
-        return ICO;
-    } else if (frame < checkpoints[2]) {
-        return int(mod(round(float(frame - checkpoints[2]) / 240.0), 3.0));
-    } else if (frame < checkpoints[3]) {
-        return int(mod(round(float(frame - checkpoints[2]) / 240.0), 3.0));
-    } else if (frame < checkpoints[4]) {
-        return int(mod(round(float(frame - checkpoints[2]) / 240.0), 3.0));
-    } else if (frame < checkpoints[5]) {
-        return ICO;
-    }
+    return Scene(m, h, k, p);
 }
 
 // lattice parameters

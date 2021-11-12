@@ -50,10 +50,13 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
         // center
         uv -= vec2(iResolution.x / iResolution.y / 2.0, 0.5);
 
+        // scene parameters
+        Scene scene = frame_to_scene(iFrame);
+        
         // lattice parameters
-        int m = frame_to_mode(iFrame);
-        float h = float(frame_to_h(iFrame));
-        float k = float(frame_to_k(iFrame));
+        int m = scene.m;
+        float h = float(scene.h);
+        float k = float(scene.k);
         Params p = mode_to_params(m, h, k);
 
         // calculate vertex coordinates
@@ -89,7 +92,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
         vec3[20] c;      // color value
         float[20] z;     // color depth
         int nf = 20;     // number of faces
-        switch (frame_to_polyhedra(iFrame)) {
+        switch (scene.p) {
             case TET:
                 nf = 4;
                 break;
@@ -104,7 +107,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
         {
             // map face
             vec3 q1, q2, q3;
-            switch (frame_to_polyhedra(iFrame)) {
+            switch (scene.p) {
                 case TET:
                     q1 = P * TET_V[int(TET_F[i].x)]; q2 = P * TET_V[int(TET_F[i].y)]; q3 = P * TET_V[int(TET_F[i].z)];
                     break;

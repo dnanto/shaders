@@ -6,10 +6,13 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     // set resolution
     vec2 uv = fragCoord / iResolution.y;
 
+    // scene parameters
+    Scene scene = frame_to_scene(iFrame);
+
     // lattice parameters
-    int m = frame_to_mode(iFrame);
-    float h = float(frame_to_h(iFrame));
-    float k = float(frame_to_k(iFrame));
+    int m = scene.m;
+    float h = float(scene.h);
+    float k = float(scene.k);
     Params p = mode_to_params(m, h, k);
 
     // calculate vertex coordinates
