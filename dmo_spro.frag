@@ -25,6 +25,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     vec3 col = vec3(0);
     vec3 rnd = 0.5 + 0.5 * cos(iTime + uv.xyx + vec3(0,2,4));
 
+    // https://en.wikipedia.org/wiki/Spirograph
     float R = 0.5;                                     // outer circle radius
     float l = 0.7;                                     // dimensionless l parameter = rho / r
     float k = 0.6;                                     // dimensionless k parameter = r   / R

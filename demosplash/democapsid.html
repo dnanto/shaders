@@ -244,7 +244,7 @@
                 0.0, 0.0, 0.0, 0.0,                                          \
                 19199.0, 16191.0, 8511.0, 9087.0, 18617.0, 16191.0, 15549.0, \
                 0.0, 0.0, 0.0, 0.0                                           \
-            )     
+            )
 
             #define credits float[] (                                                            \
                 0.0, 0.0, 0.0, 0.0,                                                              \
@@ -256,11 +256,11 @@
             #define checkpoints int[] (                                                     \
                 60 * (11),                              /* 0 - intro */                     \
                 60 * (11 + 18),                         /* 1 - plane lattice cycle */       \
-                60 * (11 + 18 + 18),                    /* 2 - icosahedral lattice cycle */ \
-                60 * (11 + 18 + 18 + 18),               /* 3 - deer */                      \
-                60 * (11 + 18 + 18 + 18 + 18),          /* 4 - random initialization */     \
-                60 * (11 + 18 + 18 + 18 + 18 + 18),     /* 5 - cellular automata */         \
-                60 * (11 + 18 + 18 + 18 + 18 + 18 + 18) /* 6 - greets */                    \
+                60 * (11 + 18 + 12),                    /* 2 - icosahedral lattice cycle */ \
+                60 * (11 + 18 + 12 + 12),               /* 3 - deer */                      \
+                60 * (11 + 18 + 12 + 12 + 6),           /* 4 - random initialization */     \
+                60 * (11 + 18 + 12 + 12 + 6 + 12),      /* 5 - cellular automata */         \
+                60 * (11 + 18 + 12 + 12 + 6 + 12 + 12)  /* 6 - greets */                    \
                                                         /* 7 - credits */                   \
             )                                                                               \
 
@@ -319,7 +319,7 @@
                     h = 18;
                     a = 0.65;
                     r = false;
-                } 
+                }
                 return Scene(m, h, k, p, a, z, g, r);
             }
 
@@ -538,7 +538,7 @@
                         else if (i == 4 || i == 7 || i == 12) ir  = -2.0;
                         /**/ if (i <= 4                     ) ic  = -1.0;
                         else if (i >= 8                     ) ic  = +1.0;
-                        /**/ if (yflip                      ) ir *= -1.0;  
+                        /**/ if (yflip                      ) ir *= -1.0;
                         float dx = ic * 2.0 * r + ir * r;
                         float dy = ir * 1.5 * R;
                         if (in_reg(uv, pos + vec2(dx, dy), 6.0, R - B, theta)) {
@@ -569,7 +569,7 @@
                 float h = float(scene.h);
                 float k = float(scene.k);
                 Params p = mode_to_params(m, h, k);
-                
+
                 if (iFrame < checkpoints[5]) {
                     // calculate vertex coordinates
                     vec2 t0 = vec2(0);
@@ -773,7 +773,7 @@
                         if (in_tri(uv, vec2(0), t1, t2)) col = mix(rnd, col, 0.85);
                     }
 
-                    fragColor = vec4(col, 1.0);    
+                    fragColor = vec4(col, 1.0);
                 } else if (iFrame < checkpoints[6]) {
                     vec2 uv = fragCoord / iResolution.y;
                     float R = 1.0 / h;
@@ -802,10 +802,10 @@
             void mainImage(out vec4 fragColor, in vec2 fragCoord) {
                 // set resolution
                 vec2 uv = fragCoord / iResolution.y;
-                
+
                 // scene parameters
                 Scene scene = frame_to_scene(iFrame);
-                
+
                 // lattice parameters
                 int m = scene.m;
                 float h = float(scene.h);
@@ -933,7 +933,7 @@
                     for (int i = 0; i < n; i++) col = mix(col, c[i], scene.a);
 
                     fragColor = vec4(col, 1);
-                } else { 
+                } else {
                     vec2 uv = fragCoord / iResolution.y;
                     float R = 1.0 / 32.0;
                     float r = R * cos30;
